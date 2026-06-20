@@ -272,7 +272,7 @@ function addGroundShadow(x, z, radius) {
  * restriction pour un simple affichage, donc on charge l'image ainsi puis on construit
  * la texture Three.js à partir de cet élément déjà chargé.
  *
- * @param {string} imageUrl - chemin vers le fichier PNG (ex: '../sprites/ennemis/01_goutteux/goutteux_idle_01.png')
+ * @param {string} imageUrl - chemin vers le fichier PNG (ex: 'sprites/ennemis/01_goutteux/goutteux_idle_01.png')
  */
 const enemyTextureCache = {}; // évite de recharger la même image à chaque frame d'idle (toutes les 600ms)
 

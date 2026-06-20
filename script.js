@@ -64,9 +64,9 @@ const magePortraitImgEl = document.getElementById("magePortraitImg");
 // Un fichier PNG individuel par humeur, conformément à la nouvelle organisation
 // des assets (plus de feuille de sprites unique, chaque image est détourée à part).
 const MAGE_MOOD_IMAGES = {
-  neutral: "../sprites/PNJ/mage_neutre.png",
-  concerned: "../sprites/PNJ/mage_inquiet.png",
-  happy: "../sprites/PNJ/mage_joyeux.png",
+  neutral: "sprites/PNJ/mage_neutre.png",
+  concerned: "sprites/PNJ/mage_inquiet.png",
+  happy: "sprites/PNJ/mage_joyeux.png",
 };
 
 function setMageMood(mood) {
@@ -1356,9 +1356,9 @@ const ENEMY_CATALOG = {
     baseStats: { pv: 35, atk: 30, def: 15, atkSpe: 10, defSpe: 10, vit: 25 },
     gainPerLevel: { pv: 4, atk: 2, def: 1, atkSpe: 1, defSpe: 1, vit: 1.5 },
     idleFrames: [
-      "../sprites/ennemis/01_goutteux/goutteux_idle_01.png",
-      "../sprites/ennemis/01_goutteux/goutteux_idle_02.png",
-      "../sprites/ennemis/01_goutteux/goutteux_idle_03.png",
+      "sprites/ennemis/01_goutteux/goutteux_idle_01.png",
+      "sprites/ennemis/01_goutteux/goutteux_idle_02.png",
+      "sprites/ennemis/01_goutteux/goutteux_idle_03.png",
     ],
     xpRewardBase: 5,
   },
@@ -1368,8 +1368,8 @@ const ENEMY_CATALOG = {
     baseStats: { pv: 30, atk: 38, def: 12, atkSpe: 15, defSpe: 8, vit: 40 },
     gainPerLevel: { pv: 3, atk: 3, def: 1, atkSpe: 1.5, defSpe: 1, vit: 2 },
     idleFrames: [
-      "../sprites/ennemis/02_arachno/arachno_idle_01.png",
-      "../sprites/ennemis/02_arachno/arachno_idle_02.png",
+      "sprites/ennemis/02_arachno/arachno_idle_01.png",
+      "sprites/ennemis/02_arachno/arachno_idle_02.png",
     ],
     xpRewardBase: 8,
   },
@@ -1380,9 +1380,9 @@ const ENEMY_CATALOG = {
     baseStats: { pv: 55, atk: 34, def: 26, atkSpe: 12, defSpe: 18, vit: 18 },
     gainPerLevel: { pv: 5, atk: 2.5, def: 2, atkSpe: 1, defSpe: 1.5, vit: 1 },
     idleFrames: [
-      "../sprites/ennemis/03_bloc/bloc_idle_01.png",
-      "../sprites/ennemis/03_bloc/bloc_idle_02.png",
-      "../sprites/ennemis/03_bloc/bloc_idle_03.png",
+      "sprites/ennemis/03_bloc/bloc_idle_01.png",
+      "sprites/ennemis/03_bloc/bloc_idle_02.png",
+      "sprites/ennemis/03_bloc/bloc_idle_03.png",
     ],
     xpRewardBase: 12,
   },
@@ -1393,8 +1393,8 @@ const ENEMY_CATALOG = {
     baseStats: { pv: 38, atk: 50, def: 16, atkSpe: 22, defSpe: 14, vit: 48 },
     gainPerLevel: { pv: 3.5, atk: 4, def: 1.5, atkSpe: 2, defSpe: 1.5, vit: 2.5 },
     idleFrames: [
-      "../sprites/ennemis/04_rodeur/rodeur_idle_01.png",
-      "../sprites/ennemis/04_rodeur/rodeur_idle_02.png",
+      "sprites/ennemis/04_rodeur/rodeur_idle_01.png",
+      "sprites/ennemis/04_rodeur/rodeur_idle_02.png",
     ],
     xpRewardBase: 18,
   },
