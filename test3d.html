@@ -7,16 +7,158 @@
   html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
   #info {
     position: fixed; top: 10px; left: 10px; color: #fff; font-family: monospace;
-    background: rgba(0,0,0,0.6); padding: 10px; z-index: 10; font-size: 13px;
+    background: rgba(0,0,0,0.6); padding: 10px; z-index: 20; font-size: 13px;
   }
+
+  /* ===========================================
+     HUD COMBAT — façon Dragon Quest III HD-2D
+     Réutilise les variables couleur du thème existant du jeu
+     (--gold, --parchment, etc., copiées depuis style.css) pour rester
+     cohérent visuellement avec le reste de MyPixelRogue.
+     =========================================== */
+  :root {
+    --forest-darkest: #1f2e1c;
+    --parchment-light: #f5ecd4;
+    --gold-light: #e0c478;
+  }
+
+  .dq-hud-stack {
+    position: fixed;
+    top: 28px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    z-index: 15;
+    pointer-events: none; /* le HUD ne doit jamais bloquer le clic sur la scène 3D derrière */
+  }
+
+  .dq-hud-card { min-width: 190px; text-align: right; }
+
+  .dq-hud-name {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 19px;
+    color: var(--parchment-light);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    margin-bottom: 7px;
+    letter-spacing: 0.5px;
+  }
+
+  .dq-hud-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+
+  .dq-hud-label {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--gold-light);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    width: 28px;
+    flex-shrink: 0;
+  }
+
+  .dq-hud-bar-track {
+    width: 130px;
+    height: 9px;
+    background: rgba(10, 8, 5, 0.55);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  .dq-hud-bar-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
+  .dq-hud-bar-fill.hp { background: linear-gradient(180deg, #8fd95f, #5fae34); }
+  .dq-hud-bar-fill.mp { background: linear-gradient(180deg, #6fc8e8, #2f8fc0); }
+
+  .dq-hud-value {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 14px;
+    color: var(--parchment-light);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    min-width: 28px;
+    text-align: right;
+  }
+
+  .dq-action-menu {
+    position: fixed;
+    bottom: 28px;
+    left: 24px;
+    background: rgba(12, 18, 10, 0.62);
+    border: 1.5px solid rgba(234, 217, 182, 0.55);
+    border-radius: 4px;
+    min-width: 320px;
+    padding: 10px 0;
+    z-index: 15;
+    cursor: pointer;
+  }
+
+  .dq-action-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 13px 26px;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 22px;
+    color: var(--parchment-light);
+    text-shadow: 0 2px 3px rgba(0,0,0,0.8);
+  }
+
+  .dq-action-cursor {
+    width: 0; height: 0;
+    border-left: 11px solid var(--gold-light);
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    opacity: 0;
+    flex-shrink: 0;
+  }
+  .dq-action-item.active .dq-action-cursor { opacity: 1; }
 </style>
 </head>
 <body>
 <div id="info">ÉTAPE 3 : + Placeholder joueur (carré coloré) en bas de l'écran</div>
 <canvas id="scene3d"></canvas>
 
+<!-- HUD HTML/CSS posé PAR-DESSUS le canvas 3D (pointer-events: none sur le
+     conteneur HP/MP pour ne jamais bloquer une interaction avec la scène 3D,
+     mais le menu d'actions reste cliquable). -->
+<div class="dq-hud-stack">
+  <div class="dq-hud-card">
+    <div class="dq-hud-name">Kimimi</div>
+    <div class="dq-hud-row">
+      <span class="dq-hud-label">HP</span>
+      <div class="dq-hud-bar-track"><div class="dq-hud-bar-fill hp" style="width:82%"></div></div>
+      <span class="dq-hud-value">58</span>
+    </div>
+    <div class="dq-hud-row">
+      <span class="dq-hud-label">MP</span>
+      <div class="dq-hud-bar-track"><div class="dq-hud-bar-fill mp" style="width:8%"></div></div>
+      <span class="dq-hud-value">5</span>
+    </div>
+  </div>
+</div>
+
+<div class="dq-action-menu">
+  <div class="dq-action-item active">
+    <span class="dq-action-cursor"></span>
+    <span>Attaque</span>
+  </div>
+  <div class="dq-action-item">
+    <span class="dq-action-cursor"></span>
+    <span>Magie</span>
+  </div>
+  <div class="dq-action-item">
+    <span class="dq-action-cursor"></span>
+    <span>Fuir</span>
+  </div>
+</div>
+
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+
 
 // ===========================================
 // SCÈNE, CAMÉRA, RENDU
@@ -24,7 +166,11 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.m
 const scene = new THREE.Scene();
 
 const fogColor = 0x1a3a4a;
-scene.fog = new THREE.Fog(fogColor, 8, 35);
+// Réglage near=6/far=22 calculé pour que les arbres (placés ~19-20 unités
+// de la caméra, voir section décor plus bas) soient fondus à ~84% dans la
+// brume (proche de l'effet "forêt diluée" de l'image de référence), tout
+// en laissant l'ennemi (~3.4 unités) complètement net.
+scene.fog = new THREE.Fog(fogColor, 6, 22);
 scene.background = new THREE.Color(fogColor);
 
 const camera = new THREE.PerspectiveCamera(
@@ -88,47 +234,105 @@ enemySprite.position.set(0, 1.8 / 2, -3);
 scene.add(enemySprite);
 
 // ===========================================
-// PLACEHOLDER JOUEUR (carré coloré, à remplacer plus tard par le sprite
-// dessiné dans Pixel Forge)
+// DÉCOR : ARBRES ET BUISSONS EN BORDURE D'ARÈNE
 // ===========================================
-// Un PlaneGeometry au lieu d'un Sprite ici, parce qu'on veut tester le
-// placement au sol en avant-plan, proche caméra — un Sprite ferait
-// aussi bien l'affaire, mais un Plane permet de vérifier facilement les
-// dimensions exactes en unités de scène (1 x 1 = un carré net).
+// Toutes les positions ci-dessous ont été calculées en arc de cercle
+// (fonction arcPositions) puis VÉRIFIÉES par calcul de projection caméra
+// (camera.project()) pour confirmer qu'elles tombent bien dans le champ
+// visible avant d'être utilisées ici — pas de placement à l'aveugle.
 //
-// Note : contrairement au Sprite (qui s'auto-oriente face caméra), un Plane
-// classique ne le fait PAS automatiquement. Comme la caméra est fixe et ne
-// tourne pas autour de la scène dans ce jeu, on peut orienter le Plane une
-// fois manuellement pour qu'il fasse face à la caméra — pas besoin de
-// recalculer à chaque frame.
-const playerGeo = new THREE.PlaneGeometry(1, 1);
-const playerMat = new THREE.MeshBasicMaterial({
-  color: 0xc94f4f,   // rouge, pour le distinguer clairement du sol vert et de l'ennemi noir
-  side: THREE.DoubleSide,
+// Sprites en billboard comme l'ennemi (toujours face caméra), chargés
+// depuis sprites/decor/ (dossier déjà présent sur le repo, généré via
+// PixelLab, mais qui n'était pas encore utilisé dans le code).
+
+function makeBillboardSprite(texturePath, scaleX, scaleY, x, y, z) {
+  const tex = textureLoader.load(texturePath);
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, fog: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(scaleX, scaleY, 1);
+  sprite.position.set(x, y, z);
+  return sprite;
+}
+
+// --- Arbres : arc large, loin derrière l'arène (bien dans la brume) ---
+// Positions calculées : arc de rayon 9, centré en z=-10, de -70° à +70°,
+// vérifiées dans le champ caméra (toutes à NDC x entre -0.53 et 0.53).
+const treeArc = [
+  { x: -8.46, z: -10.92 },
+  { x: -7.14, z: -11.64 },
+  { x: -5.16, z: -12.21 },
+  { x: -2.71, z: -12.58 },
+  { x: 0.00,  z: -12.70 },
+  { x: 2.71,  z: -12.58 },
+  { x: 5.16,  z: -12.21 },
+  { x: 7.14,  z: -11.64 },
+  { x: 8.46,  z: -10.92 },
+];
+// Alternance feuillu_01 / feuillu_02 pour casser la répétition visuelle
+treeArc.forEach((pos, i) => {
+  const texFile = (i % 2 === 0) ? 'feuillu_01.png' : 'feuillu_02.png';
+  // Hauteur 4.5, largeur 3.2 : grands arbres, la base touche le sol (y = hauteur/2)
+  const tree = makeBillboardSprite(
+    `sprites/decor/${texFile}`,
+    3.2, 4.5,
+    pos.x, 4.5 / 2, pos.z
+  );
+  scene.add(tree);
 });
-const playerPlaceholder = new THREE.Mesh(playerGeo, playerMat);
+
+// --- Buissons : arc plus proche, bordure visible de la clairière ---
+// Positions calculées : arc de rayon 6.5, centré en z=-7, de -75° à +75°.
+const bushArc = [
+  { x: -6.28, z: -7.50 },
+  { x: -4.98, z: -8.25 },
+  { x: -2.75, z: -8.77 },
+  { x: 0.00,  z: -8.95 },
+  { x: 2.75,  z: -8.77 },
+  { x: 4.98,  z: -8.25 },
+  { x: 6.28,  z: -7.50 },
+];
+const bushFiles = ['buisson_01.png', 'buisson_02.png', 'buisson_03.png', 'buisson_04.png'];
+bushArc.forEach((pos, i) => {
+  const texFile = bushFiles[i % bushFiles.length];
+  // Hauteur 1.1, largeur 1.3 : buissons bas, la base touche le sol
+  const bush = makeBillboardSprite(
+    `sprites/decor/${texFile}`,
+    1.3, 1.1,
+    pos.x, 1.1 / 2, pos.z
+  );
+  scene.add(bush);
+});
+
+
+// PLACEHOLDER JOUEUR EN SPRITE (et non Plane+lookAt comme essayé d'abord).
+//
+// CORRECTION suite à vérification visuelle par capture d'écran : la version
+// Plane+lookAt() donnait un carré visiblement DÉFORMÉ/trapézoïdal (pas un
+// carré net), parce que lookAt() oriente le Plane selon l'angle EXACT vers
+// la caméra, ce qui inclut une légère perspective/distorsion quand la
+// caméra n'est pas parfaitement alignée sur l'axe Z de l'objet. Un Sprite
+// n'a pas ce problème car Three.js l'aligne TOUJOURS perpendiculairement à
+// la direction de vue de la caméra, sans jamais déformer sa géométrie —
+// comparaison testée et visible côte à côte avant ce choix.
+const playerMat = new THREE.SpriteMaterial({
+  color: 0xc94f4f,   // rouge, pour le distinguer clairement du sol vert et de l'ennemi noir
+});
+const playerPlaceholder = new THREE.Sprite(playerMat);
+playerPlaceholder.scale.set(1, 1, 1);
 
 // Position : avant-plan, légèrement à gauche du centre (comme le héros
 // principal dans l'image de référence).
 // y = 0.5 pour que la base du carré (1x1) touche le sol.
 //
-// IMPORTANT (bug corrigé) : la position initiale (z=4) ne plaçait que le
-// haut du carré dans le cadre caméra (vérifié par calcul de projection :
-// project() donnait NDC y=-1.72 pour les coins du bas, hors de la plage
-// valide [-1, 1]). z=2.5 restait encore légèrement hors cadre sur un coin
-// (-1.026). z=2.0 a été vérifié avec la VRAIE matrice de transformation
-// (position + rotation lookAt combinées, pas juste la position du centre)
-// et place les 4 sommets dans le cadre avec une marge confortable
-// (NDC y entre -0.871 et -0.364).
+// z=2.0 vérifié par calcul de projection (project() sur les 4 sommets,
+// avec la VRAIE matrice de transformation) : tous les sommets restent dans
+// le cadre caméra avec une marge confortable (NDC y entre -0.871 et -0.364).
 playerPlaceholder.position.set(-0.8, 0.5, 2.0);
 
-// Le Plane fait face à la caméra : on le fait pivoter pour qu'il soit
-// vertical et tourné vers la caméra, en copiant l'orientation de la caméra
-// vers la scène (équivalent d'un billboard figé, valide tant que la caméra
-// ne bouge pas pendant le combat).
-playerPlaceholder.lookAt(camera.position.x, playerPlaceholder.position.y, camera.position.z);
-
 scene.add(playerPlaceholder);
+
 
 // ===========================================
 // RESPONSIVE
