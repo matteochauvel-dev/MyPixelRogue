@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Test 3D - Étape 2 : Sprite ennemi</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+  #info {
+    position: fixed; top: 10px; left: 10px; color: #fff; font-family: monospace;
+    background: rgba(0,0,0,0.6); padding: 10px; z-index: 10; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div id="info">ÉTAPE 2 : Sol + Ciel + Brume + Caméra + Sprite ennemi (billboard)</div>
+<canvas id="scene3d"></canvas>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+
+// ===========================================
+// SCÈNE, CAMÉRA, RENDU
+// ===========================================
+const scene = new THREE.Scene();
+
+const fogColor = 0x1a3a4a;
+scene.fog = new THREE.Fog(fogColor, 8, 35);
+scene.background = new THREE.Color(fogColor);
+
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
+
+camera.position.set(0, 2.6, 6.5);
+camera.lookAt(0, 1.0, -2);
+
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('scene3d'), antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+
+// ===========================================
+// LUMIÈRES
+// ===========================================
+const ambient = new THREE.AmbientLight(0x4a6a7a, 1.2);
+scene.add(ambient);
+
+const dirLight = new THREE.DirectionalLight(0xaaccdd, 0.8);
+dirLight.position.set(-3, 8, 2);
+scene.add(dirLight);
+
+// ===========================================
+// SOL
+// ===========================================
+const groundGeo = new THREE.PlaneGeometry(40, 40);
+const groundMat = new THREE.MeshStandardMaterial({
+  color: 0x2d6b2f,
+  roughness: 1,
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = 0;
+scene.add(ground);
+
+const gridHelper = new THREE.GridHelper(40, 40, 0x88aa88, 0x4a7a4a);
+gridHelper.position.y = 0.01;
+scene.add(gridHelper);
+
+// ===========================================
+// SPRITE ENNEMI EN BILLBOARD
+// ===========================================
+// THREE.Sprite fait TOUJOURS face à la caméra automatiquement (c'est la
+// définition même d'un billboard dans Three.js) — pas besoin de gérer
+// l'orientation manuellement, ça évite une classe entière de bugs.
+//
+// Chemin du sprite : identique à la structure réelle du repo GitHub Pages
+// (racine du repo, sans ../), donc cette page doit être à la racine du repo
+// pour que ce chemin fonctionne, exactement comme index.html/script.js/style.css.
+const textureLoader = new THREE.TextureLoader();
+const enemyTexture = textureLoader.load(
+  'sprites/ennemis/01_goutteux/goutteux_idle_01.png',
+  () => { console.log('Sprite ennemi chargé avec succès.'); },
+  undefined,
+  (err) => { console.error('Erreur de chargement du sprite ennemi :', err); }
+);
+// Pixel art : pas de flou sur l'agrandissement, on garde les pixels nets.
+enemyTexture.magFilter = THREE.NearestFilter;
+enemyTexture.minFilter = THREE.NearestFilter;
+
+const enemyMaterial = new THREE.SpriteMaterial({
+  map: enemyTexture,
+  transparent: true,   // respecte la transparence PNG du sprite
+});
+const enemySprite = new THREE.Sprite(enemyMaterial);
+
+// Taille du sprite dans l'espace 3D (largeur, hauteur, profondeur ignorée).
+// 1.8 unité de haut = environ la taille d'un personnage debout dans cette
+// échelle de scène (le sol fait 40 unités de large).
+enemySprite.scale.set(1.8, 1.8, 1);
+
+// Position : centre de l'arène, légèrement en profondeur (z négatif = plus
+// loin de la caméra), à mi-hauteur du sol pour que les "pieds" du sprite
+// touchent le sol (le centre d'un Sprite Three.js est son CENTRE, pas sa base,
+// donc on remonte de moitié de sa hauteur).
+enemySprite.position.set(0, 1.8 / 2, -3);
+scene.add(enemySprite);
+
+// ===========================================
+// RESPONSIVE
+// ===========================================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ===========================================
+// BOUCLE DE RENDU
+// ===========================================
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
