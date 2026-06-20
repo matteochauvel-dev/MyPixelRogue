@@ -62,8 +62,10 @@ function initCombat3D(containerId) {
 
   // --- Scène, caméra, renderer ---
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x6a96c8);
-  scene.fog = new THREE.Fog(0x6a96c8, 8, 28);
+  // Ambiance crépuscule/nuit en forêt : bleu-violet profond plutôt que ciel de
+  // jour clair, cohérent avec l'ambiance sombre et mystérieuse recherchée.
+  scene.background = new THREE.Color(0x141d2e);
+  scene.fog = new THREE.Fog(0x141d2e, 6, 24);
 
   const safeWidth = container.clientWidth || 800;   // valeur de secours si jamais 0
   const safeHeight = container.clientHeight || 400;  // pour ne jamais créer un renderer 0x0
@@ -71,8 +73,8 @@ function initCombat3D(containerId) {
   console.log('Combat3D: dimensions utilisées pour le renderer :', safeWidth, 'x', safeHeight, '(aspect:', aspect, ')');
 
   camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-  camera.position.set(0, 1.7, 6.5);
-  camera.lookAt(0, 1.1, -1);
+  camera.position.set(0, 2.4, 5.5);
+  camera.lookAt(0, 0.3, -3);
 
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -86,11 +88,11 @@ function initCombat3D(containerId) {
   container.appendChild(renderer.domElement);
   console.log('Combat3D: canvas WebGL créé et ajouté au conteneur.', renderer.domElement);
 
-  // --- Lumières ---
-  const ambient = new THREE.AmbientLight(0xaabbdd, 0.55);
+  // --- Lumières : ambiance nocturne froide, lumière de lune tamisée plutôt que soleil ---
+  const ambient = new THREE.AmbientLight(0x4a5d8a, 0.65);
   scene.add(ambient);
 
-  const sunLight = new THREE.DirectionalLight(0xfff4d6, 1.4);
+  const sunLight = new THREE.DirectionalLight(0x8fa8d6, 0.55);
   sunLight.position.set(5, 8, 4);
   sunLight.castShadow = true;
   sunLight.shadow.mapSize.set(1024, 1024);
@@ -104,7 +106,7 @@ function initCombat3D(containerId) {
 
   // --- Sol ---
   const groundGeo = new THREE.PlaneGeometry(40, 40);
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x5c7a3e, roughness: 0.9 });
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x2c3d28, roughness: 0.9 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -116,15 +118,19 @@ function initCombat3D(containerId) {
   createDeepForestBackdrop(scene);
 
   // --- Sprites billboard (placeholders au départ, remplacés via setXxxSprite) ---
+  // Teinte très légère (proche du blanc, juste assez pour ancrer les sprites dans
+  // l'ambiance nocturne sans dénaturer leurs couleurs d'origine).
+  const characterAmbientTint = new THREE.Color(0xdce4f0);
+
   const placeholderTexture = buildPlaceholderTexture('#3d3d5c');
-  const enemyMat = new THREE.SpriteMaterial({ map: placeholderTexture, transparent: true });
+  const enemyMat = new THREE.SpriteMaterial({ map: placeholderTexture, transparent: true, color: characterAmbientTint });
   enemySprite = new THREE.Sprite(enemyMat);
   enemySprite.scale.set(ENEMY_SPRITE_HEIGHT, ENEMY_SPRITE_HEIGHT, 1);
   enemySprite.position.set(ENEMY_POSITION.x, ENEMY_POSITION.y, ENEMY_POSITION.z);
   scene.add(enemySprite);
 
   const playerPlaceholderTexture = buildPlaceholderTexture('#3f6b2b');
-  const playerMat = new THREE.SpriteMaterial({ map: playerPlaceholderTexture, transparent: true });
+  const playerMat = new THREE.SpriteMaterial({ map: playerPlaceholderTexture, transparent: true, color: characterAmbientTint });
   playerSprite = new THREE.Sprite(playerMat);
   playerSprite.scale.set(1.8, 1.8, 1);
   playerSprite.position.set(PLAYER_POSITION.x, PLAYER_POSITION.y, PLAYER_POSITION.z);
@@ -149,7 +155,7 @@ function initCombat3D(containerId) {
   // répondre à ce besoin précis.)
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bokehPass = new BokehPass(scene, camera, { focus: 5.4, aperture: 0.018, maxblur: 0 });
+  bokehPass = new BokehPass(scene, camera, { focus: 4.7, aperture: 0.045, maxblur: 0.018 });
   composer.addPass(bokehPass);
   composer.addPass(new OutputPass());
 
@@ -403,13 +409,17 @@ function createForestDecor(scene) {
     { zMin: 2,   zMax: 4,   scaleMin: 2.6, scaleMax: 3.6, fade: 0,    count: 8,  xRange: 4.2, excludeCenter: true, categories: ['deciduous', 'bush', 'grass'] },
   ];
 
-  // Mélange la couleur blanche (= pas de teinte) avec un bleu-gris pâle selon
-  // le facteur "fade" (0 = couleur d'origine intacte, 1 = quasi entièrement
-  // pâle), pour simuler la brume atmosphérique sans modifier la texture source.
+  // Teinte appliquée au décor : un assombrissement de base systématique (même
+  // pour les éléments proches) pour cohérence avec l'ambiance nocturne/crépuscule,
+  // puis un fade supplémentaire vers le bleu sombre du brouillard pour les
+  // éléments lointains (au lieu d'un fade vers le blanc, qui n'avait de sens
+  // qu'avec un ciel de jour clair).
   function fadeTintColor(fade) {
-    const r = Math.round(255 - (255 - 165) * fade);
-    const g = Math.round(255 - (255 - 178) * fade);
-    const b = Math.round(255 - (255 - 188) * fade);
+    const baseDarken = 0.6; // 60% de la luminosité d'origine, même au premier plan
+    const fr = 20, fg = 29, fb = 46; // teinte du brouillard nocturne (cohérent avec scene.fog)
+    const r = Math.round(255 * baseDarken * (1 - fade) + fr * fade);
+    const g = Math.round(255 * baseDarken * (1 - fade) + fg * fade);
+    const b = Math.round(255 * baseDarken * (1 - fade) + fb * fade);
     return new THREE.Color(`rgb(${r}, ${g}, ${b})`);
   }
 
@@ -552,8 +562,10 @@ function setPlayerSpriteFromCanvas(sourceCanvas) {
  */
 function setPlayerShiny(isShiny) {
   if (!isInitialized) return;
-  // Léger glow doré en superposant une émissive sur le sprite, via une teinte simple.
-  playerSprite.material.color.set(isShiny ? 0xfff0c0 : 0xffffff);
+  // Léger glow doré en superposant une émissive sur le sprite si shiny, sinon
+  // on conserve la teinte d'ambiance nocturne (pas un blanc pur qui annulerait
+  // la cohérence visuelle avec le reste de la scène assombrie).
+  playerSprite.material.color.set(isShiny ? 0xfff0c0 : 0xdce4f0);
 }
 
 /**
