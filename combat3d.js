@@ -234,10 +234,10 @@ function createDOMParticles(container) {
            en CSS, sans dépendre du rendu WebGL (qui ne peut pas affecter ces
            éléments DOM de toute façon, puisqu'ils sont en overlay HTML). */
         box-shadow:
-          0 0 4px 1px rgba(255, 250, 220, 1),
-          0 0 10px 4px rgba(255, 240, 180, 0.85),
-          0 0 18px 8px rgba(255, 230, 150, 0.5),
-          0 0 28px 14px rgba(255, 220, 120, 0.25);
+          0 0 3px 1px rgba(255, 250, 220, 0.8),
+          0 0 6px 2px rgba(255, 240, 180, 0.55),
+          0 0 10px 4px rgba(255, 230, 150, 0.3),
+          0 0 16px 7px rgba(255, 220, 120, 0.15);
         pointer-events: none;
         z-index: 2;
         opacity: 0;
