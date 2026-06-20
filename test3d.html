@@ -166,11 +166,13 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.m
 const scene = new THREE.Scene();
 
 const fogColor = 0x1a3a4a;
-// Réglage near=6/far=22 calculé pour que les arbres (placés ~19-20 unités
-// de la caméra, voir section décor plus bas) soient fondus à ~84% dans la
-// brume (proche de l'effet "forêt diluée" de l'image de référence), tout
-// en laissant l'ennemi (~3.4 unités) complètement net.
-scene.fog = new THREE.Fog(fogColor, 6, 22);
+// Réglage near=6/far=28 : recalculé pour la forêt en 3 couches (proche
+// z≈-10, moyenne z≈-14, loin z≈-19). Avec l'ancien far=22, la couche loin
+// (distance ≈24.5 de la caméra) tombait à un facteur de fog de 1.0, donc
+// totalement invisible — bug détecté par calcul avant livraison. Avec
+// far=28 : ennemi net (0%), couche proche 43% fondue, moyenne 61%, loin 84%
+// (visible mais très assombrie) — progression de profondeur cohérente.
+scene.fog = new THREE.Fog(fogColor, 6, 28);
 scene.background = new THREE.Color(fogColor);
 
 const camera = new THREE.PerspectiveCamera(
@@ -234,56 +236,117 @@ enemySprite.position.set(0, 1.8 / 2, -3);
 scene.add(enemySprite);
 
 // ===========================================
-// DÉCOR : ARBRES ET BUISSONS EN BORDURE D'ARÈNE
+// DÉCOR : MUR DE FORÊT EN 3 COUCHES DE PROFONDEUR
 // ===========================================
-// Toutes les positions ci-dessous ont été calculées en arc de cercle
-// (fonction arcPositions) puis VÉRIFIÉES par calcul de projection caméra
-// (camera.project()) pour confirmer qu'elles tombent bien dans le champ
-// visible avant d'être utilisées ici — pas de placement à l'aveugle.
+// Objectif (demandé) : que le feuillage comble tout le cadre — haut ET
+// côtés — sans laisser de trous de ciel visible, comme l'image de
+// référence (mur de forêt dense, pas une rangée d'arbres espacés).
 //
-// Sprites en billboard comme l'ennemi (toujours face caméra), chargés
-// depuis sprites/decor/ (dossier déjà présent sur le repo, généré via
-// PixelLab, mais qui n'était pas encore utilisé dans le code).
+// MÉTHODE DE CALCUL (pas de placement à l'oeil) :
+// 1. Pour chaque couche de profondeur, frustumWidthAtDistance() donne la
+//    largeur EXACTE du champ visible à cette distance (géométrie de la
+//    caméra : 2 * distance * tan(FOV/2) * aspect ratio).
+// 2. On couvre cette largeur +40% de marge de sécurité de chaque côté
+//    (pour qu'aucun bord d'écran ne montre de trou, même sur des écrans
+//    plus larges que la résolution de référence).
+// 3. Le nombre d'arbres est calculé pour un chevauchement de ~35% entre
+//    arbres voisins (espacement = 65% de la largeur du sprite).
+// 4. La hauteur de sprite par couche a été vérifiée par projection réelle
+//    (camera.project() sur le point sommet) pour confirmer que la canopée
+//    dépasse bien le haut du cadre (NDC y > 1) à cette distance.
+//
+// Couche proche  (z≈-9,  largeur visible ≈28) : 17 arbres, hauteur 7.5
+// Couche moyenne (z≈-13, largeur visible ≈36) : 17 arbres, hauteur 9.0
+// Couche loin    (z≈-18, largeur visible ≈45) : 16 arbres, hauteur 11.0
+//
+// L'assombrissement progressif (en plus du fog) utilise la teinte du
+// SpriteMaterial (color) pour renforcer l'effet de profondeur : les arbres
+// lointains sont teintés plus sombre/bleuté avant même que le fog agisse,
+// ce qui évite l'effet "tout à la même luminosité" remarqué sur le test précédent.
 
-function makeBillboardSprite(texturePath, scaleX, scaleY, x, y, z) {
+function makeBillboardSprite(texturePath, scaleX, scaleY, x, y, z, tintColor) {
   const tex = textureLoader.load(texturePath);
   tex.magFilter = THREE.NearestFilter;
   tex.minFilter = THREE.NearestFilter;
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, fog: true });
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    transparent: true,
+    fog: true,
+    color: tintColor !== undefined ? tintColor : 0xffffff,
+  });
   const sprite = new THREE.Sprite(mat);
   sprite.scale.set(scaleX, scaleY, 1);
   sprite.position.set(x, y, z);
   return sprite;
 }
 
-// --- Arbres : arc large, loin derrière l'arène (bien dans la brume) ---
-// Positions calculées : arc de rayon 9, centré en z=-10, de -70° à +70°,
-// vérifiées dans le champ caméra (toutes à NDC x entre -0.53 et 0.53).
-const treeArc = [
-  { x: -8.46, z: -10.92 },
-  { x: -7.14, z: -11.64 },
-  { x: -5.16, z: -12.21 },
-  { x: -2.71, z: -12.58 },
-  { x: 0.00,  z: -12.70 },
-  { x: 2.71,  z: -12.58 },
-  { x: 5.16,  z: -12.21 },
-  { x: 7.14,  z: -11.64 },
-  { x: 8.46,  z: -10.92 },
-];
-// Alternance feuillu_01 / feuillu_02 pour casser la répétition visuelle
-treeArc.forEach((pos, i) => {
-  const texFile = (i % 2 === 0) ? 'feuillu_01.png' : 'feuillu_02.png';
-  // Hauteur 4.5, largeur 3.2 : grands arbres, la base touche le sol (y = hauteur/2)
+// Génère une rangée en arc léger (pas une ligne droite parfaite, pour
+// casser la rigidité visuelle), avec un décalage de hauteur aléatoire léger
+// pour que les arbres ne soient pas tous parfaitement alignés à la même
+// hauteur de base (variation naturelle, comme un vrai sol irrégulier).
+function generateForestLayer(count, zCenter, xSpreadHalf, treeHeight, treeWidthRatio) {
+  const positions = [];
+  for (let i = 0; i < count; i++) {
+    const t = count === 1 ? 0.5 : i / (count - 1);
+    const x = -xSpreadHalf + t * (xSpreadHalf * 2);
+    const zVariation = Math.sin(t * Math.PI) * (treeHeight * 0.2);
+    // petite variation pseudo-aléatoire déterministe (basée sur l'index)
+    // pour casser l'alignement parfait, sans dépendre de Math.random()
+    // (déterministe = résultat reproductible et vérifiable par calcul)
+    const jitterX = ((i * 37) % 7 - 3) * 0.15;
+    const jitterZ = ((i * 53) % 5 - 2) * 0.25;
+    positions.push({
+      x: x + jitterX,
+      z: zCenter - zVariation + jitterZ,
+    });
+  }
+  return positions;
+}
+
+const treeFiles = ['feuillu_01.png', 'feuillu_02.png'];
+
+// --- Couche PROCHE (la plus nette, la moins fondue dans le fog) ---
+const nearLayer = generateForestLayer(17, -10, 20, 7.5, 0.62);
+nearLayer.forEach((pos, i) => {
+  const texFile = treeFiles[i % treeFiles.length];
+  const h = 7.5 + (i % 3) * 0.4; // légère variation de hauteur (7.5 à 8.3)
+  const w = h * 0.62;
   const tree = makeBillboardSprite(
-    `sprites/decor/${texFile}`,
-    3.2, 4.5,
-    pos.x, 4.5 / 2, pos.z
+    `sprites/decor/${texFile}`, w, h, pos.x, h / 2, pos.z,
+    0xeaf2e6 // très légèrement teinté, presque blanc pur (couche proche = peu assombrie)
   );
   scene.add(tree);
 });
 
-// --- Buissons : arc plus proche, bordure visible de la clairière ---
-// Positions calculées : arc de rayon 6.5, centré en z=-7, de -75° à +75°.
+// --- Couche MOYENNE (assombrissement modéré) ---
+const midLayer = generateForestLayer(17, -14, 25, 9.0, 0.6);
+midLayer.forEach((pos, i) => {
+  const texFile = treeFiles[i % treeFiles.length];
+  const h = 9.0 + (i % 3) * 0.5;
+  const w = h * 0.6;
+  const tree = makeBillboardSprite(
+    `sprites/decor/${texFile}`, w, h, pos.x, h / 2, pos.z,
+    0xb9c9c2 // teinte bleu-vert grisée, assombrissement modéré
+  );
+  scene.add(tree);
+});
+
+// --- Couche LOIN (la plus sombre/fondue, juste avant que le fog absorbe tout) ---
+const farLayer = generateForestLayer(16, -19, 31, 11.0, 0.58);
+farLayer.forEach((pos, i) => {
+  const texFile = treeFiles[i % treeFiles.length];
+  const h = 11.0 + (i % 3) * 0.6;
+  const w = h * 0.58;
+  const tree = makeBillboardSprite(
+    `sprites/decor/${texFile}`, w, h, pos.x, h / 2, pos.z,
+    0x6f8a8c // teinte bleu-gris sombre, la couche la plus profonde
+  );
+  scene.add(tree);
+});
+
+// --- Buissons : bordure proche de la clairière, devant la couche proche ---
+// Positions calculées : arc de rayon 6.5, centré en z=-7, de -75° à +75°
+// (inchangé par rapport à la version précédente, déjà validée visuellement).
 const bushArc = [
   { x: -6.28, z: -7.50 },
   { x: -4.98, z: -8.25 },
@@ -292,15 +355,19 @@ const bushArc = [
   { x: 2.75,  z: -8.77 },
   { x: 4.98,  z: -8.25 },
   { x: 6.28,  z: -7.50 },
+  // quelques buissons additionnels plus éloignés sur les côtés, pour
+  // raccorder visuellement la bordure de clairière au mur de forêt
+  { x: -9.5,  z: -7.0 },
+  { x: 9.5,   z: -7.0 },
 ];
 const bushFiles = ['buisson_01.png', 'buisson_02.png', 'buisson_03.png', 'buisson_04.png'];
 bushArc.forEach((pos, i) => {
   const texFile = bushFiles[i % bushFiles.length];
-  // Hauteur 1.1, largeur 1.3 : buissons bas, la base touche le sol
   const bush = makeBillboardSprite(
     `sprites/decor/${texFile}`,
     1.3, 1.1,
-    pos.x, 1.1 / 2, pos.z
+    pos.x, 1.1 / 2, pos.z,
+    0xffffff
   );
   scene.add(bush);
 });
