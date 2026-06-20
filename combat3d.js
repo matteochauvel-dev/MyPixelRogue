@@ -13,20 +13,20 @@
 // nécessaires en un seul fichier sans import/export, compatible file://.
 
 const THREE = window.THREE;
-const { EffectComposer, RenderPass, BokehPass, OutputPass } = window.THREE_ADDONS;
+const { EffectComposer, RenderPass, BokehPass, OutputPass, UnrealBloomPass } = window.THREE_ADDONS;
 
-let scene, camera, renderer, composer, bokehPass;
+let scene, camera, renderer, composer, bokehPass, bloomPass;
 let enemySprite, playerSprite;
 let particleGeometry, particleSystem;
 let clock;
 let isInitialized = false;
 
-const PARTICLE_COUNT = 80;
-const PARTICLE_ZONE = { xMin: -7, xMax: 7, yMin: 0, yMax: 5, zMin: -6, zMax: 4 };
+const PARTICLE_COUNT = 120;
+const PARTICLE_ZONE = { xMin: -4.5, xMax: 4.5, yMin: 0, yMax: 3.5, zMin: -4, zMax: 3 };
 let particleSpeeds, particleDrift;
 
 // Positions des sprites dans la scène (mêmes valeurs validées dans le fichier de test)
-const ENEMY_POSITION = { x: 2.2, y: 0.9, z: -2.5 };
+const ENEMY_POSITION = { x: 2.2, y: 1.0, z: -1.5 };
 const PLAYER_POSITION = { x: -2, y: 1.0, z: 1.5 };
 
 /**
@@ -71,11 +71,13 @@ function initCombat3D(containerId) {
   console.log('Combat3D: dimensions utilisées pour le renderer :', safeWidth, 'x', safeHeight, '(aspect:', aspect, ')');
 
   camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-  camera.position.set(0, 3.2, 7);
-  camera.lookAt(0, 1, 0);
+  camera.position.set(0, 1.7, 6.5);
+  camera.lookAt(0, 1.1, -1);
 
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; // requis par UnrealBloomPass (voir doc officielle)
+  renderer.toneMappingExposure = 1.0;
   } catch (err) {
     console.error('Combat3D: ÉCHEC de la création du WebGLRenderer. WebGL est peut-être désactivé ou non supporté sur ce navigateur/cette machine.', err);
     return;
@@ -127,7 +129,7 @@ function initCombat3D(containerId) {
   const placeholderTexture = buildPlaceholderTexture('#3d3d5c');
   const enemyMat = new THREE.SpriteMaterial({ map: placeholderTexture, transparent: true });
   enemySprite = new THREE.Sprite(enemyMat);
-  enemySprite.scale.set(1.6, 1.6, 1);
+  enemySprite.scale.set(2.4, 2.4, 1);
   enemySprite.position.set(ENEMY_POSITION.x, ENEMY_POSITION.y, ENEMY_POSITION.z);
   scene.add(enemySprite);
 
@@ -162,19 +164,27 @@ function initCombat3D(containerId) {
 
   const particleMaterial = new THREE.PointsMaterial({
     color: 0xfff2c8,
-    size: 0.06,
+    size: 0.09,
     transparent: true,
-    opacity: 0.75,
+    opacity: 0.85,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
   particleSystem = new THREE.Points(particleGeometry, particleMaterial);
   scene.add(particleSystem);
 
-  // --- Post-processing : flou de profondeur ---
+  // --- Post-processing : bloom puis flou de profondeur ---
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bokehPass = new BokehPass(scene, camera, { focus: 6.3, aperture: 0.018, maxblur: 0 });
+
+  const bloomResolution = new THREE.Vector2(safeWidth, safeHeight);
+  bloomPass = new UnrealBloomPass(bloomResolution, 0.5, 0.4, 0.86);
+  // strength=0.5 (intensité modérée, pour un halo discret plutôt qu'un effet excessif
+  // qui dénaturerait le pixel art), radius=0.4, threshold=0.86 (seules les zones les
+  // plus lumineuses de la scène - le ciel clair, les particules dorées - déclenchent le bloom)
+  composer.addPass(bloomPass);
+
+  bokehPass = new BokehPass(scene, camera, { focus: 5.4, aperture: 0.018, maxblur: 0 });
   composer.addPass(bokehPass);
   composer.addPass(new OutputPass());
 
@@ -218,6 +228,7 @@ function initCombat3D(containerId) {
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
     composer.setSize(w, h);
+    bloomPass.setSize(w, h);
     console.log('Combat3D: taille du renderer synchronisée sur le conteneur :', w, 'x', h);
   }
 
