@@ -249,11 +249,20 @@ function createDOMParticles(container) {
         0%   { transform: translate(0, 0); opacity: 0; }
         10%  { opacity: 1; }
         90%  { opacity: 0.7; }
-        100% { transform: translate(var(--drift), -100%); opacity: 0; }
+        100% { transform: translate(var(--drift), var(--rise-distance)); opacity: 0; }
       }
     `;
     document.head.appendChild(styleEl);
   }
+
+  // IMPORTANT : transform: translate() en pourcentage se base sur la taille de
+  // l'ÉLÉMENT TRANSFORMÉ lui-même, jamais sur celle de son parent (comportement
+  // CSS standard, vérifié sur MDN/CSS-Tricks). Comme nos particules ne font que
+  // quelques pixels, "translateY(-100%)" ne les déplaçait que de leur propre
+  // hauteur (quelques pixels) au lieu de toute la hauteur du conteneur — elles
+  // semblaient donc rester bloquées en bas de l'écran. On calcule donc la vraie
+  // distance de montée en pixels, à partir de la hauteur réelle du conteneur.
+  const riseDistance = container.clientHeight || 400; // valeur de secours si 0
 
   const PARTICLE_COUNT_DOM = 18;
   for (let i = 0; i < PARTICLE_COUNT_DOM; i++) {
@@ -269,6 +278,7 @@ function createDOMParticles(container) {
     el.style.height = size + 'px';
     el.style.left = leftPercent + '%';
     el.style.setProperty('--drift', driftPx + 'px');
+    el.style.setProperty('--rise-distance', '-' + riseDistance + 'px');
     el.style.animationDuration = duration + 's';
     el.style.animationDelay = '-' + delay + 's'; // délai négatif = certaines particules démarrent déjà "en cours"
 
