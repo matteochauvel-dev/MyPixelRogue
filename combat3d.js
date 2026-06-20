@@ -29,6 +29,11 @@ let particleSpeeds, particleDrift;
 const ENEMY_POSITION = { x: 2.2, y: 1.0, z: -1.5 };
 const PLAYER_POSITION = { x: -2, y: 1.0, z: 1.5 };
 
+// Hauteur de référence (en unités de scène) pour TOUS les sprites ennemis, peu
+// importe le ratio de leur image source. La largeur est calculée proportionnellement
+// à cette hauteur pour ne jamais déformer l'image (voir setEnemySpriteFrame).
+const ENEMY_SPRITE_HEIGHT = 2.6;
+
 /**
  * Initialise toute la scène 3D. À appeler UNE SEULE FOIS, au premier chargement
  * de l'écran de combat (équivalent du rôle de initCombatSession côté logique).
@@ -77,7 +82,7 @@ function initCombat3D(containerId) {
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.toneMapping = THREE.ACESFilmicToneMapping; // requis par UnrealBloomPass (voir doc officielle)
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.15;
   } catch (err) {
     console.error('Combat3D: ÉCHEC de la création du WebGLRenderer. WebGL est peut-être désactivé ou non supporté sur ce navigateur/cette machine.', err);
     return;
@@ -129,7 +134,7 @@ function initCombat3D(containerId) {
   const placeholderTexture = buildPlaceholderTexture('#3d3d5c');
   const enemyMat = new THREE.SpriteMaterial({ map: placeholderTexture, transparent: true });
   enemySprite = new THREE.Sprite(enemyMat);
-  enemySprite.scale.set(2.4, 2.4, 1);
+  enemySprite.scale.set(ENEMY_SPRITE_HEIGHT, ENEMY_SPRITE_HEIGHT, 1);
   enemySprite.position.set(ENEMY_POSITION.x, ENEMY_POSITION.y, ENEMY_POSITION.z);
   scene.add(enemySprite);
 
@@ -164,9 +169,9 @@ function initCombat3D(containerId) {
 
   const particleMaterial = new THREE.PointsMaterial({
     color: 0xfff2c8,
-    size: 0.09,
+    size: 0.13,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.9,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
@@ -291,8 +296,10 @@ function setEnemySpriteFrame(imageUrl) {
   if (!isInitialized) return;
 
   if (enemyTextureCache[imageUrl]) {
-    enemySprite.material.map = enemyTextureCache[imageUrl];
+    const cached = enemyTextureCache[imageUrl];
+    enemySprite.material.map = cached.texture;
     enemySprite.material.needsUpdate = true;
+    enemySprite.scale.set(cached.width, cached.height, 1);
     return;
   }
 
@@ -302,9 +309,17 @@ function setEnemySpriteFrame(imageUrl) {
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
     texture.needsUpdate = true; // requis : THREE.Texture ne sait pas tout seul que l'image vient de charger
-    enemyTextureCache[imageUrl] = texture;
+
+    // Calcul du ratio RÉEL de l'image (ex: Arachno est en format paysage, plus
+    // large que haut) pour ne jamais la déformer en forçant un carré arbitraire.
+    const aspectRatio = imgEl.naturalWidth / imgEl.naturalHeight;
+    const height = ENEMY_SPRITE_HEIGHT;
+    const width = ENEMY_SPRITE_HEIGHT * aspectRatio;
+
+    enemyTextureCache[imageUrl] = { texture, width, height };
     enemySprite.material.map = texture;
     enemySprite.material.needsUpdate = true;
+    enemySprite.scale.set(width, height, 1);
   };
   imgEl.onerror = (err) => {
     console.error('Combat3D: échec de chargement de l\'image ennemie :', imageUrl, err);
