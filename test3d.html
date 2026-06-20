@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Test 3D - Étape 3 : Placeholder joueur</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+  #info {
+    position: fixed; top: 10px; left: 10px; color: #fff; font-family: monospace;
+    background: rgba(0,0,0,0.6); padding: 10px; z-index: 10; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div id="info">ÉTAPE 3 : + Placeholder joueur (carré coloré) en bas de l'écran</div>
+<canvas id="scene3d"></canvas>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+
+// ===========================================
+// SCÈNE, CAMÉRA, RENDU
+// ===========================================
+const scene = new THREE.Scene();
+
+const fogColor = 0x1a3a4a;
+scene.fog = new THREE.Fog(fogColor, 8, 35);
+scene.background = new THREE.Color(fogColor);
+
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
+
+camera.position.set(0, 2.6, 6.5);
+camera.lookAt(0, 1.0, -2);
+
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('scene3d'), antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+
+// ===========================================
+// LUMIÈRES
+// ===========================================
+const ambient = new THREE.AmbientLight(0x4a6a7a, 1.2);
+scene.add(ambient);
+
+const dirLight = new THREE.DirectionalLight(0xaaccdd, 0.8);
+dirLight.position.set(-3, 8, 2);
+scene.add(dirLight);
+
+// ===========================================
+// SOL
+// ===========================================
+const groundGeo = new THREE.PlaneGeometry(40, 40);
+const groundMat = new THREE.MeshStandardMaterial({
+  color: 0x2d6b2f,
+  roughness: 1,
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = 0;
+scene.add(ground);
+
+const gridHelper = new THREE.GridHelper(40, 40, 0x88aa88, 0x4a7a4a);
+gridHelper.position.y = 0.01;
+scene.add(gridHelper);
+
+// ===========================================
+// SPRITE ENNEMI EN BILLBOARD (réglages validés à l'étape 2, inchangés)
+// ===========================================
+const textureLoader = new THREE.TextureLoader();
+const enemyTexture = textureLoader.load(
+  'sprites/ennemis/01_goutteux/goutteux_idle_01.png'
+);
+enemyTexture.magFilter = THREE.NearestFilter;
+enemyTexture.minFilter = THREE.NearestFilter;
+
+const enemyMaterial = new THREE.SpriteMaterial({
+  map: enemyTexture,
+  transparent: true,
+});
+const enemySprite = new THREE.Sprite(enemyMaterial);
+enemySprite.scale.set(1.8, 1.8, 1);
+enemySprite.position.set(0, 1.8 / 2, -3);
+scene.add(enemySprite);
+
+// ===========================================
+// PLACEHOLDER JOUEUR (carré coloré, à remplacer plus tard par le sprite
+// dessiné dans Pixel Forge)
+// ===========================================
+// Un PlaneGeometry au lieu d'un Sprite ici, parce qu'on veut tester le
+// placement au sol en avant-plan, proche caméra — un Sprite ferait
+// aussi bien l'affaire, mais un Plane permet de vérifier facilement les
+// dimensions exactes en unités de scène (1 x 1 = un carré net).
+//
+// Note : contrairement au Sprite (qui s'auto-oriente face caméra), un Plane
+// classique ne le fait PAS automatiquement. Comme la caméra est fixe et ne
+// tourne pas autour de la scène dans ce jeu, on peut orienter le Plane une
+// fois manuellement pour qu'il fasse face à la caméra — pas besoin de
+// recalculer à chaque frame.
+const playerGeo = new THREE.PlaneGeometry(1, 1);
+const playerMat = new THREE.MeshBasicMaterial({
+  color: 0xc94f4f,   // rouge, pour le distinguer clairement du sol vert et de l'ennemi noir
+  side: THREE.DoubleSide,
+});
+const playerPlaceholder = new THREE.Mesh(playerGeo, playerMat);
+
+// Position : avant-plan, légèrement à gauche du centre (comme le héros
+// principal dans l'image de référence), proche de la caméra.
+// y = 0.5 pour que la base du carré (1x1) touche le sol.
+playerPlaceholder.position.set(-0.8, 0.5, 4);
+
+// Le Plane fait face à la caméra : on le fait pivoter pour qu'il soit
+// vertical et tourné vers la caméra, en copiant l'orientation de la caméra
+// vers la scène (équivalent d'un billboard figé, valide tant que la caméra
+// ne bouge pas pendant le combat).
+playerPlaceholder.lookAt(camera.position.x, playerPlaceholder.position.y, camera.position.z);
+
+scene.add(playerPlaceholder);
+
+// ===========================================
+// RESPONSIVE
+// ===========================================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ===========================================
+// BOUCLE DE RENDU
+// ===========================================
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
