@@ -1,0 +1,1820 @@
+/* ===========================================
+   PALETTE "NATURE / FORÊT RPG"
+   =========================================== */
+:root {
+  --forest-darkest: #1f2e1c;
+  --forest-dark: #2d4427;
+  --forest-medium: #3f5c35;
+  --forest-light: #5c7a4f;
+  --moss: #7a9669;
+  --bark: #5a4632;
+  --bark-dark: #3e2f21;
+  --bark-light: #7a6347;
+  --parchment: #ead9b6;
+  --parchment-light: #f5ecd4;
+  --parchment-dark: #d4bd8c;
+  --gold: #c9a24b;
+  --gold-light: #e0c478;
+  --berry-red: #a23b3b;
+  --ink: #2b2118;
+  --shadow: rgba(20, 15, 8, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Georgia', 'Trebuchet MS', serif;
+  color: var(--ink);
+  background: var(--forest-darkest);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(122, 150, 105, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(90, 70, 50, 0.18) 0%, transparent 50%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.04) 0px,
+      rgba(0, 0, 0, 0.04) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+  background-attachment: fixed;
+}
+
+.app-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/* ===========================================
+   EN-TÊTE
+   =========================================== */
+.header-banner {
+  text-align: center;
+  margin-bottom: 28px;
+  padding: 18px 20px;
+  background: linear-gradient(180deg, var(--bark) 0%, var(--bark-dark) 100%);
+  border: 3px solid var(--gold);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px var(--shadow), inset 0 0 30px rgba(0,0,0,0.25);
+  position: relative;
+}
+
+.header-banner::before,
+.header-banner::after {
+  content: "✦";
+  color: var(--gold-light);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  opacity: 0.7;
+}
+.header-banner::before { left: 24px; }
+.header-banner::after { right: 24px; }
+
+.header-banner h1 {
+  margin: 0 0 6px;
+  color: var(--parchment-light);
+  font-size: 30px;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+}
+
+.header-banner p {
+  margin: 0;
+  color: var(--parchment-dark);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* ===========================================
+   LAYOUT PRINCIPAL
+   =========================================== */
+.main-layout {
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.panel {
+  background: linear-gradient(180deg, var(--parchment-light) 0%, var(--parchment) 100%);
+  border: 3px solid var(--bark);
+  border-radius: 10px;
+  box-shadow: 0 6px 14px var(--shadow);
+  padding: 18px;
+}
+
+.panel-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--bark-dark);
+  border-bottom: 2px solid var(--forest-medium);
+  padding-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title .leaf-icon {
+  color: var(--forest-medium);
+  font-size: 18px;
+}
+
+.tool-subtitle {
+  margin: 14px 0 8px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  color: var(--bark);
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* ===========================================
+   PANNEAU GAUCHE - OUTILS
+   =========================================== */
+.left-panel {
+  width: 230px;
+  flex-shrink: 0;
+}
+
+.grid-size-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.grid-size-btn {
+  padding: 10px 12px;
+  background: var(--parchment);
+  border: 2px solid var(--bark-light);
+  border-radius: 6px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.grid-size-btn:hover {
+  background: var(--moss);
+  color: var(--parchment-light);
+  transform: translateX(2px);
+}
+
+.grid-size-btn.active {
+  background: var(--forest-medium);
+  color: var(--parchment-light);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(201, 162, 75, 0.3);
+}
+
+.tool-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.tool-btn {
+  padding: 10px 12px;
+  background: var(--parchment);
+  border: 2px solid var(--bark-light);
+  border-radius: 6px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-btn:hover {
+  background: var(--gold-light);
+  transform: translateX(2px);
+}
+
+.tool-btn.active {
+  background: var(--gold);
+  color: var(--bark-dark);
+  border-color: var(--bark-dark);
+  font-weight: bold;
+}
+
+.tool-icon {
+  font-size: 18px;
+}
+
+.shape-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.shape-btn {
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 4px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.shape-btn .tool-icon {
+  font-size: 20px;
+}
+
+.clear-btn {
+  background: var(--berry-red);
+  color: var(--parchment-light);
+  border-color: var(--bark-dark);
+}
+
+.clear-btn:hover {
+  background: #c24747;
+}
+
+/* Zoom controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.zoom-btn {
+  width: 38px;
+  height: 38px;
+  background: var(--forest-medium);
+  color: var(--parchment-light);
+  border: 2px solid var(--bark-dark);
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.zoom-btn:hover {
+  background: var(--moss);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-display {
+  flex: 1;
+  text-align: center;
+  font-weight: bold;
+  color: var(--bark-dark);
+  background: var(--parchment-dark);
+  border-radius: 6px;
+  padding: 8px 4px;
+  font-size: 14px;
+  border: 2px solid var(--bark-light);
+}
+
+.zoom-hint {
+  font-size: 11px;
+  color: var(--bark);
+  font-style: italic;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* ===========================================
+   SÉLECTEUR DE COULEUR HSV (façon Figma/Photoshop)
+   =========================================== */
+.color-picker-wrapper {
+  margin-bottom: 10px;
+}
+
+.sv-square-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--bark-dark);
+  cursor: crosshair;
+  margin-bottom: 12px;
+  touch-action: none;
+}
+
+.sv-square-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sv-cursor {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  top: 0;
+  left: 100%;
+}
+
+.hue-slider-container {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid var(--bark-dark);
+  cursor: pointer;
+  margin-bottom: 14px;
+  touch-action: none;
+}
+
+.hue-slider-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hue-cursor {
+  position: absolute;
+  width: 10px;
+  height: 26px;
+  top: 50%;
+  border-radius: 3px;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: transparent;
+  left: 0%;
+}
+
+.hex-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hex-input-row label {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--bark-dark);
+  text-transform: uppercase;
+}
+
+.hex-input-row input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 2px solid var(--bark-light);
+  border-radius: 6px;
+  background: var(--parchment-light);
+  color: var(--ink);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  text-transform: lowercase;
+}
+
+.hex-input-row input:focus {
+  outline: none;
+  border-color: var(--forest-medium);
+  box-shadow: 0 0 0 3px rgba(63, 92, 53, 0.2);
+}
+
+.hex-input-row input.invalid {
+  border-color: var(--berry-red);
+  box-shadow: 0 0 0 3px rgba(162, 59, 59, 0.2);
+}
+
+.current-color-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 8px;
+  background: var(--parchment-dark);
+  border-radius: 6px;
+  border: 2px solid var(--bark-light);
+}
+
+.current-color-swatch {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--bark-dark);
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.current-color-label {
+  font-size: 12px;
+  color: var(--bark-dark);
+}
+
+/* ===========================================
+   PANNEAU CENTRAL - CANVAS
+   =========================================== */
+.center-panel {
+  flex: 1;
+  min-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-viewport {
+  width: 100%;
+  height: 520px;
+  background: repeating-conic-gradient(#bcae8a 0% 25%, #ad9c74 0% 50%) 50% / 24px 24px;
+  border: 4px solid var(--bark-dark);
+  border-radius: 8px;
+  overflow: auto;
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.35);
+  cursor: crosshair;
+  /* CORRECTIF BUG ZOOM (partie 2/2) : à fort dézoom, le canvas devient plus petit que
+     ce viewport de 520px de hauteur. Sans ce centrage, le canvas restait collé au
+     coin haut-gauche, laissant un grand espace de fond "bois" en bas/droite, ce qui
+     accentuait l'impression de détourage incohérent. display:grid + place-items:center
+     centre le canvas quand il est petit, tout en gardant un défilement fiable et
+     symétrique dans toutes les directions quand il redevient plus grand que le viewport
+     (contrairement à flex+justify-content qui peut, selon les navigateurs, déplacer le
+     point de défilement "zéro" de façon moins prévisible dans ce cas précis).
+  */
+  display: grid;
+  place-items: center;
+}
+
+.canvas-viewport::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.canvas-viewport::-webkit-scrollbar-track {
+  background: var(--bark-dark);
+}
+
+.canvas-viewport::-webkit-scrollbar-thumb {
+  background: var(--forest-medium);
+  border-radius: 7px;
+  border: 2px solid var(--bark-dark);
+}
+
+.canvas-viewport::-webkit-scrollbar-thumb:hover {
+  background: var(--moss);
+}
+
+#pixelCanvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.canvas-info-bar {
+  margin-top: 10px;
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--parchment-dark);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.canvas-info-bar span {
+  background: var(--bark-dark);
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--bark-light);
+}
+
+/* ===========================================
+   PANNEAU DROIT - INFOS CRÉATURE
+   =========================================== */
+.right-panel {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--bark-dark);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--bark-light);
+  border-radius: 6px;
+  background: var(--parchment-light);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--forest-medium);
+  box-shadow: 0 0 0 3px rgba(63, 92, 53, 0.2);
+}
+
+.char-counter {
+  font-size: 11px;
+  color: var(--bark);
+  text-align: right;
+  margin-top: 3px;
+}
+
+.creature-preview-box {
+  background: var(--parchment-dark);
+  border: 2px solid var(--bark-light);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.creature-preview-box .preview-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--bark-dark);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+#previewCanvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border: 2px solid var(--bark-dark);
+  background: white;
+  border-radius: 4px;
+}
+
+.validate-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(180deg, var(--forest-medium) 0%, var(--forest-dark) 100%);
+  color: var(--parchment-light);
+  border: 3px solid var(--gold);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  box-shadow: 0 4px 10px var(--shadow);
+}
+
+.validate-btn:hover {
+  background: linear-gradient(180deg, var(--moss) 0%, var(--forest-medium) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px var(--shadow);
+}
+
+.validate-btn:active {
+  transform: translateY(0);
+}
+
+.validate-btn:disabled {
+  background: #8a8478;
+  border-color: #6b6558;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+.validation-message {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: center;
+  display: none;
+}
+
+.validation-message.success {
+  display: block;
+  background: rgba(63, 92, 53, 0.2);
+  border: 2px solid var(--forest-medium);
+  color: var(--forest-dark);
+}
+
+.validation-message.error {
+  display: block;
+  background: rgba(162, 59, 59, 0.15);
+  border: 2px solid var(--berry-red);
+  color: var(--berry-red);
+}
+
+/* ===========================================
+   SYSTÈME D'ÉCRANS (Menu / Dialogue / Éditeur)
+   =========================================== */
+.screen {
+  width: 100%;
+  animation: screenFadeIn 0.5s ease;
+}
+
+@keyframes screenFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===========================================
+   ÉCRAN : MENU PRINCIPAL
+   =========================================== */
+.screen-menu {
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.menu-box {
+  background: linear-gradient(180deg, var(--parchment-light) 0%, var(--parchment) 100%);
+  border: 4px solid var(--bark);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px var(--shadow), inset 0 0 40px rgba(122, 150, 105, 0.08);
+  padding: 50px 60px;
+  text-align: center;
+  max-width: 480px;
+}
+
+.menu-decoration {
+  font-size: 26px;
+  margin-bottom: 14px;
+  letter-spacing: 12px;
+}
+
+.menu-title {
+  margin: 0 0 10px;
+  font-size: 32px;
+  color: var(--bark-dark);
+  letter-spacing: 2px;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.3);
+}
+
+.menu-subtitle {
+  margin: 0 0 30px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--bark);
+}
+
+.main-btn {
+  padding: 16px 38px;
+  background: linear-gradient(180deg, var(--forest-medium) 0%, var(--forest-dark) 100%);
+  color: var(--parchment-light);
+  border: 3px solid var(--gold);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px var(--shadow);
+}
+
+.main-btn:hover {
+  background: linear-gradient(180deg, var(--moss) 0%, var(--forest-medium) 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 16px var(--shadow);
+}
+
+.main-btn:active {
+  transform: translateY(0) scale(1);
+}
+
+/* ===========================================
+   ÉCRAN : DIALOGUE (VISUAL NOVEL)
+   =========================================== */
+.screen-dialogue {
+  display: flex;
+  justify-content: center;
+  padding: 20px 10px 40px;
+  position: relative;
+}
+
+.dialogue-scene {
+  display: flex;
+  justify-content: center;
+  max-width: 700px;
+  width: 100%;
+}
+
+/* ===========================================
+   PORTRAIT DU MAGE (fichiers PNG individuels détourés)
+   =========================================== */
+/* Carré positionné en haut à gauche DE la boîte de dialogue (et non plus à côté).
+   .dialogue-box doit donc être en position:relative pour que ce positionnement
+   absolu se cale correctement par rapport à elle et non par rapport à un ancêtre plus large. */
+.mage-portrait-wrapper {
+  position: absolute;
+  top: -22px;
+  left: -22px;
+  width: 96px;
+  height: 96px;
+  background-color: var(--parchment-light);
+  border-radius: 14px;
+  border: 4px solid var(--bark-dark);
+  box-shadow: 0 8px 14px rgba(0,0,0,0.45), 0 0 0 4px var(--gold);
+  z-index: 3;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mage-portrait-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  /* Petit fondu lors du changement d'humeur, géré en JS en rebasculant cette classe */
+  animation: mageMoodSwap 0.25s ease;
+}
+
+@keyframes mageMoodSwap {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ===========================================
+   OVERLAY : REMISE DU PINCEAU MAGIQUE
+   =========================================== */
+.giving-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: rgba(31, 46, 28, 0.88);
+  border-radius: 12px;
+  z-index: 10;
+  animation: givingFadeIn 0.4s ease;
+}
+
+@keyframes givingFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.giving-artifact-img {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 10px 24px rgba(0,0,0,0.6)) drop-shadow(0 0 30px rgba(201, 162, 75, 0.5));
+  animation: givingArtifactReveal 1.1s ease;
+}
+
+@keyframes givingArtifactReveal {
+  0%   { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+  60%  { transform: scale(1.08) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.giving-caption {
+  color: var(--parchment-light);
+  font-size: 17px;
+  font-style: italic;
+  text-align: center;
+  max-width: 420px;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+}
+
+/* Fenêtre de dialogue façon parchemin posé sur bois sculpté */
+.dialogue-box {
+  width: 100%;
+  background: linear-gradient(180deg, var(--parchment-light) 0%, var(--parchment) 100%);
+  border: 6px solid var(--bark);
+  border-radius: 16px;
+  box-shadow:
+    0 10px 28px var(--shadow),
+    inset 0 0 0 3px var(--bark-light),
+    inset 0 0 30px rgba(90, 70, 50, 0.12);
+  padding: 22px 28px 26px 100px;
+  margin-top: 30px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Petits "clous" décoratifs dans les coins, pour renforcer le style bois sculpté */
+.dialogue-box::before,
+.dialogue-box::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--gold);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--bark-dark);
+  top: 14px;
+}
+.dialogue-box::before { left: 14px; }
+.dialogue-box::after { right: 14px; }
+
+.dialogue-speaker {
+  display: inline-block;
+  background: var(--bark-dark);
+  color: var(--gold-light);
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 6px;
+  border: 2px solid var(--gold);
+  margin-bottom: 14px;
+}
+
+.dialogue-text {
+  min-height: 84px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink);
+  margin-bottom: 18px;
+}
+
+/* Curseur clignotant affiché pendant l'effet machine à écrire */
+.dialogue-text .typing-cursor {
+  display: inline-block;
+  width: 9px;
+  height: 18px;
+  background: var(--bark);
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: cursorBlink 0.8s steps(1) infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.dialogue-next-btn {
+  display: block;
+  margin-left: auto;
+  padding: 10px 26px;
+  background: var(--forest-medium);
+  color: var(--parchment-light);
+  border: 2px solid var(--bark-dark);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dialogue-next-btn:hover {
+  background: var(--moss);
+  transform: translateX(2px);
+}
+
+.dialogue-next-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+/* Choix Oui / Non */
+.dialogue-choices {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.choice-btn {
+  flex: 1;
+  max-width: 160px;
+  padding: 12px 20px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+}
+
+.choice-yes {
+  background: linear-gradient(180deg, var(--forest-medium) 0%, var(--forest-dark) 100%);
+  color: var(--parchment-light);
+  border: 2px solid var(--gold);
+}
+.choice-yes:hover {
+  background: linear-gradient(180deg, var(--moss) 0%, var(--forest-medium) 100%);
+  transform: translateY(-2px);
+}
+
+.choice-no {
+  background: var(--parchment-dark);
+  color: var(--bark-dark);
+  border: 2px solid var(--bark-light);
+}
+.choice-no:hover {
+  background: var(--berry-red);
+  color: var(--parchment-light);
+  border-color: var(--bark-dark);
+  transform: translateY(-2px);
+}
+
+.enter-forge-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 15px;
+  background: linear-gradient(180deg, var(--gold) 0%, #a9802f 100%);
+  color: var(--bark-dark);
+  border: 3px solid var(--bark-dark);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: forgeBtnPulse 1.8s ease-in-out infinite;
+}
+
+.enter-forge-btn:hover {
+  background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold) 100%);
+  transform: translateY(-2px) scale(1.02);
+}
+
+@keyframes forgeBtnPulse {
+  0%, 100% { box-shadow: 0 4px 10px var(--shadow); }
+  50% { box-shadow: 0 4px 18px rgba(201, 162, 75, 0.6); }
+}
+
+@media (max-width: 600px) {
+  .mage-portrait-wrapper {
+    width: 72px;
+    height: 72px;
+    top: -16px;
+    left: -16px;
+  }
+  .dialogue-box {
+    padding-left: 72px;
+  }
+  .menu-box {
+    padding: 36px 28px;
+  }
+  .dialogue-choices {
+    flex-direction: column;
+  }
+  .choice-btn {
+    max-width: none;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .main-layout {
+    justify-content: center;
+  }
+  .left-panel, .right-panel {
+    width: 100%;
+    max-width: 480px;
+  }
+  .center-panel {
+    width: 100%;
+    order: -1;
+  }
+}
+
+/* ===========================================
+   SÉQUENCE POST-VALIDATION : LOTERIE + QUESTIONNAIRE DU MAGE
+   =========================================== */
+.post-validation-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(15, 12, 8, 0.82);
+  backdrop-filter: blur(2px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: postValidationFadeIn 0.35s ease;
+}
+
+@keyframes postValidationFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lottery-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 520px;
+  width: 100%;
+  background: linear-gradient(180deg, var(--parchment-light) 0%, var(--parchment) 100%);
+  border: 4px solid var(--gold);
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  padding: 32px 28px;
+  text-align: center;
+  animation: lotteryStageIn 0.4s ease;
+}
+
+@keyframes lotteryStageIn {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.lottery-title {
+  margin: 0;
+  font-size: 24px;
+  color: var(--bark-dark);
+  letter-spacing: 1px;
+}
+
+.lottery-subtitle {
+  margin: 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--bark);
+}
+
+/* --- Roue tournante (construite en conic-gradient) --- */
+/* --- Nouvelle roue : cases statiques + aiguille tournante --- */
+.wheel-layout {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+}
+
+.wheel-container {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  flex-shrink: 0;
+}
+
+/* La roue elle-même : disque avec les cases colorées dessinées en SVG inline,
+   elle est FIXE — c'est l'aiguille seule qui tourne */
+.wheel-disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 5px solid var(--bark-dark);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4), inset 0 0 0 3px var(--gold);
+  position: relative;   /* contexte de positionnement stable pour l'aiguille */
+  overflow: visible;    /* l'aiguille ne doit pas être clippée par la bordure du disc */
+}
+
+.wheel-disc svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Hub central de la roue (point de pivot de l'aiguille) */
+.wheel-hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: var(--bark-dark);
+  border-radius: 50%;
+  border: 3px solid var(--gold);
+  z-index: 10;
+}
+
+/* Wrapper pivot : centré exactement sur la roue, tourne autour de son propre centre.
+   transform-origin par défaut = "50% 50%" = centre du wrapper = centre de la roue. ✓
+   C'est LUI qui reçoit la rotation JS, pas l'aiguille directement. */
+.wheel-needle-pivot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+  transform: rotate(0deg);
+  transition: transform 3.4s cubic-bezier(0.15, 0.85, 0.22, 1);
+  z-index: 8;
+  pointer-events: none;
+}
+
+/* L'aiguille elle-même : positionnée à l'intérieur du pivot, pointe vers le haut.
+   Son bas est au centre du wrapper (= centre de la roue), sa pointe vers 12h. */
+.wheel-needle {
+  position: absolute;
+  bottom: 50%;          /* base au centre vertical du pivot */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 42%;          /* longueur = ~42% du diamètre = ~84% du rayon */
+  background: linear-gradient(to top, #c0392b, #e74c3c, #ff6b6b);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+/* Panneau de description du résultat (à droite de la roue) */
+.wheel-info-panel {
+  flex: 1;
+  min-height: 160px;
+  background: var(--parchment-dark);
+  border: 2px solid var(--bark-light);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wheel-info-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--bark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.wheel-info-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wheel-info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink);
+  opacity: 0.6;
+  transition: opacity 0.25s ease, font-weight 0.25s ease;
+}
+
+.wheel-info-item.highlighted {
+  opacity: 1;
+  font-weight: bold;
+}
+
+.wheel-info-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(0,0,0,0.2);
+}
+
+.lottery-spin-btn,
+.lottery-continue-btn {
+  padding: 13px 32px;
+  background: linear-gradient(180deg, var(--forest-medium) 0%, var(--forest-dark) 100%);
+  color: var(--parchment-light);
+  border: 3px solid var(--gold);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lottery-spin-btn:hover,
+.lottery-continue-btn:hover {
+  background: linear-gradient(180deg, var(--moss) 0%, var(--forest-medium) 100%);
+  transform: translateY(-2px);
+}
+
+.lottery-spin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lottery-result-card {
+  width: 100%;
+  padding: 20px;
+  background: var(--parchment-dark);
+  border: 2px solid var(--bark-light);
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.lottery-result-card .result-highlight {
+  font-weight: bold;
+  font-size: 18px;
+  color: var(--forest-dark);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.lottery-result-card.is-shiny {
+  background: linear-gradient(135deg, #fff7d6, #ffe9a8, #fff7d6);
+  border-color: var(--gold);
+  animation: shinySparkle 1.8s ease-in-out infinite;
+}
+
+@keyframes shinySparkle {
+  0%, 100% { box-shadow: 0 0 12px rgba(201, 162, 75, 0.4); }
+  50% { box-shadow: 0 0 28px rgba(201, 162, 75, 0.85); }
+}
+
+/* --- Questionnaire du Mage : grille d'archétypes --- */
+.archetype-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.archetype-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 12px;
+  background: var(--parchment);
+  border: 2px solid var(--bark-light);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: left;
+}
+
+.archetype-btn:hover {
+  background: var(--gold-light);
+  border-color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.archetype-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--bark-dark);
+}
+
+.archetype-desc {
+  font-size: 11px;
+  color: var(--bark);
+}
+
+.archetype-recap-card {
+  width: 100%;
+  padding: 20px;
+  background: var(--parchment-dark);
+  border: 2px solid var(--bark-light);
+  border-radius: 10px;
+}
+
+.archetype-recap-text {
+  margin: 0;
+  font-size: 14px;
+  color: #5a5247;
+  line-height: 1.6;
+}
+
+.archetype-recap-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.archetype-restart-btn,
+.archetype-accept-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.archetype-restart-btn {
+  background: var(--parchment-dark);
+  color: var(--bark-dark);
+  border: 2px solid var(--bark-light);
+}
+.archetype-restart-btn:hover {
+  background: var(--berry-red);
+  color: var(--parchment-light);
+}
+
+.archetype-accept-btn {
+  background: linear-gradient(180deg, var(--forest-medium) 0%, var(--forest-dark) 100%);
+  color: var(--parchment-light);
+  border: 2px solid var(--gold);
+}
+.archetype-accept-btn:hover {
+  background: linear-gradient(180deg, var(--moss) 0%, var(--forest-medium) 100%);
+}
+
+@media (max-width: 560px) {
+  .archetype-choices {
+    grid-template-columns: 1fr;
+  }
+  .wheel-container {
+    width: 180px;
+    height: 180px;
+  }
+  .wheel-layout {
+    flex-direction: column;
+  }
+}
+
+/* ===========================================
+   ÉCRAN DE COMBAT — LAYOUT STYLE POKÉMON
+   =========================================== */
+.screen-combat {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 80px); /* hauteur viewport moins le header */
+  position: relative;
+}
+
+/* Voile de transition d'entrée en combat : noir opaque au départ, se dissipe
+   une fois l'écran de combat affiché, avant que les sprites ne commencent à glisser. */
+.combat-entry-veil {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: #0a0a0a;
+  z-index: 50;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.55s ease;
+}
+
+.combat-entry-veil.is-fading {
+  opacity: 0;
+}
+
+/* Bandeau vague */
+.combat-wave-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, var(--bark) 0%, var(--bark-dark) 100%);
+  border-bottom: 2px solid var(--gold);
+  padding: 8px 20px;
+  color: var(--parchment-light);
+  font-size: 13px;
+  font-weight: bold;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.wave-label { font-size: 14px; letter-spacing: 0.5px; white-space: nowrap; }
+
+.wave-progress-track {
+  flex: 1;
+  height: 7px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.wave-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--moss), var(--gold));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* ── Arène Pokémon ────────────────────────────── */
+.poke-arena {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 320px;
+  background: #1a1410; /* fond de secours neutre, le canvas 3D doit le recouvrir entièrement une fois initialisé */
+  border-bottom: 3px solid var(--bark-dark);
+  overflow: hidden;
+}
+
+/* Le canvas injecté dynamiquement par Three.js doit remplir tout le conteneur */
+.poke-arena canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  z-index: 1;
+}
+
+/* HUD style Pokémon : boîte blanche arrondie */
+.poke-hud {
+  position: absolute;
+  background: white;
+  border-radius: 10px;
+  border: 3px solid #2a2a3a;
+  padding: 6px 12px;
+  min-width: 180px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+  z-index: 5; /* doit rester lisible au-dessus du voile blanc (z-index: 1) */
+}
+
+.poke-hud-enemy {
+  top: 10%;
+  left: 4%;
+}
+
+.poke-hud-player {
+  bottom: 10%;
+  right: 4%;
+}
+
+.poke-hud-name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #1a1a2e;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.poke-hud-level {
+  font-size: 12px;
+  font-weight: normal;
+  color: #333;
+}
+
+.poke-hp-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.poke-hp-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #555;
+  font-family: 'Courier New', monospace;
+  flex-shrink: 0;
+}
+
+.poke-hp-track {
+  flex: 1;
+  height: 8px;
+  background: #888;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1.5px solid #444;
+}
+
+.poke-hp-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease, background 0.4s ease;
+  background: #58d858;
+}
+.poke-hp-fill.hp-medium { background: #f8c800; }
+.poke-hp-fill.hp-low    { background: #f83800; }
+
+.poke-hp-numbers {
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: #333;
+  text-align: right;
+  margin-top: 2px;
+}
+
+.poke-xp-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.poke-xp-label {
+  font-size: 10px;
+  font-weight: bold;
+  color: #4040cc;
+  font-family: 'Courier New', monospace;
+  flex-shrink: 0;
+}
+
+.poke-xp-track {
+  flex: 1;
+  height: 5px;
+  background: #aaa;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #666;
+}
+
+.poke-xp-fill {
+  height: 100%;
+  background: #4040cc;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.poke-xp-numbers {
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  color: #555;
+  text-align: right;
+}
+
+/* Zones sprites */
+.poke-sprite-area {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5; /* doit rester net au-dessus du voile blanc (z-index: 1) */
+}
+
+/* Ennemi : en haut à droite, de dos (face au joueur) */
+.poke-sprite-enemy {
+  top: 5%;
+  right: 6%;
+  /* État initial : hors écran à droite, invisible */
+  transform: translateX(220px);
+  opacity: 0;
+  transition: transform 0.65s cubic-bezier(0.22, 0.9, 0.32, 1.1), opacity 0.3s ease;
+}
+
+.poke-sprite-enemy.has-entered {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.poke-sprite-enemy img {
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.4));
+}
+
+/* Joueur : en bas à gauche */
+.poke-sprite-player {
+  bottom: 4%;
+  left: 6%;
+  /* État initial : hors écran à gauche, invisible */
+  transform: translateX(-220px);
+  opacity: 0;
+  transition: transform 0.65s cubic-bezier(0.22, 0.9, 0.32, 1.1), opacity 0.3s ease;
+}
+
+.poke-sprite-player.has-entered {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Socles ovales façon Pokémon */
+.poke-platform {
+  width: 90px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
+  margin-top: -6px;
+}
+
+/* Effet Shiny sur le sprite joueur */
+.poke-sprite-player.is-shiny #playerPixelCanvas {
+  filter: drop-shadow(0 0 8px rgba(255,215,0,0.9)) drop-shadow(2px 4px 4px rgba(0,0,0,0.4));
+  animation: shinyGlow 2s ease-in-out infinite;
+}
+
+@keyframes shinyGlow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255,215,0,0.9)) drop-shadow(2px 4px 4px rgba(0,0,0,0.4)); }
+  50%       { filter: drop-shadow(0 0 18px rgba(255,215,0,1)) drop-shadow(2px 4px 4px rgba(0,0,0,0.4)); }
+}
+
+/* ── Boîte de dialogue Pokémon ───────────────── */
+.poke-dialog-box {
+  display: flex;
+  align-items: stretch;
+  background: #f0f0e0;
+  border-top: 6px solid #2a2a3a;
+  flex-shrink: 0;
+  font-family: 'Courier New', monospace;
+  /* Double bordure style Pokémon */
+  box-shadow: inset 0 4px 0 #a0a090, inset 0 8px 0 #f0f0e0;
+}
+
+/* Zone de texte : UN seul message visible à la fois, grand et lisible */
+.poke-dialog-text {
+  flex: 1;
+  padding: 18px 24px;
+  font-size: 17px;
+  font-weight: bold;
+  color: #1a1a2e;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  min-height: 90px;
+  border-right: 4px solid #2a2a3a;
+  position: relative;
+}
+
+/* Le message courant (un seul affiché à la fois via JS) */
+#combatLog {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Curseur clignotant style machine à écrire */
+.dialog-cursor {
+  display: inline-block;
+  width: 10px;
+  height: 18px;
+  background: #1a1a2e;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: cursorBlink 0.7s steps(1) infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 50%  { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Triangle "suite" en bas à droite de la dialog box (style Pokémon) */
+.dialog-next-arrow {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  font-size: 14px;
+  color: #1a1a2e;
+  animation: arrowBounce 0.6s ease-in-out infinite alternate;
+  display: none;
+}
+.dialog-next-arrow.visible { display: block; }
+
+@keyframes arrowBounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(4px); }
+}
+
+/* Couleurs selon le type de message */
+.dialog-msg-player  { color: #1a6e1a; }
+.dialog-msg-enemy   { color: #8b0000; }
+.dialog-msg-crit    { color: #cc6600; }
+.dialog-msg-xp      { color: #3030aa; }
+.dialog-msg-level   { color: #8800aa; }
+.dialog-msg-system  { color: #444; }
+
+/* Grille 2×2 de boutons */
+.poke-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #2a2a3a;
+  gap: 3px;
+  padding: 5px;
+  min-width: 240px;
+  flex-shrink: 0;
+}
+
+.poke-action-btn {
+  padding: 0 14px;
+  background: #e0f0e0;
+  border: none;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  color: #1a1a2e;
+  cursor: pointer;
+  transition: background 0.1s ease, transform 0.08s ease;
+  letter-spacing: 0.5px;
+  min-height: 52px;
+  border-radius: 2px;
+}
+
+.poke-action-btn:hover:not(:disabled) {
+  background: #b8e8b8;
+  transform: scale(0.97);
+}
+
+.poke-action-btn:active:not(:disabled) {
+  transform: scale(0.93);
+}
+
+.poke-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #d0d0d0;
+}
+
+.poke-action-defend { background: #dde0f0; }
+.poke-action-defend:hover:not(:disabled) { background: #b8b8e8; }
+
+.poke-action-flee { background: #f0dede; }
+.poke-action-flee:hover:not(:disabled) { background: #e8b8b8; }
+
+/* Indicateur tour ennemi (remplace la grille de boutons) */
+.poke-waiting {
+  display: none;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 18px 24px;
+  font-size: 17px;
+  font-weight: bold;
+  color: #1a1a2e;
+  font-family: 'Courier New', monospace;
+}
+.poke-waiting.visible {
+  display: flex;
+}
+
+/* Sprites plus grands */
+.poke-sprite-enemy img {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(3px 6px 5px rgba(0,0,0,0.35));
+}
+
+#playerPixelCanvas {
+  width: 150px;
+  height: 150px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(3px 6px 5px rgba(0,0,0,0.35));
+}
+
+.poke-platform-enemy { width: 150px; height: 22px; }
+.poke-platform-player { width: 120px; height: 18px; }
+
+/* HUDs légèrement agrandis */
+@media (max-width: 600px) {
+  .poke-hud { min-width: 150px; }
+  .poke-sprite-enemy img { width: 110px; height: 110px; }
+  #playerPixelCanvas { width: 90px; height: 90px; }
+  .poke-action-grid { min-width: 170px; }
+  .poke-action-btn { font-size: 12px; min-height: 44px; }
+  .poke-dialog-text { font-size: 14px; padding: 14px 16px; }
+}
+
+
+
+
+

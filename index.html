@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créateur de Créature - Pixel Forge</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <div class="header-banner">
+    <h1>🌿 Pixel Forge 🌿</h1>
+    <p>Forge ta créature, pixel par pixel</p>
+  </div>
+
+  <!-- =================================================
+       ÉCRAN 1 : MENU PRINCIPAL
+       ================================================= -->
+  <div class="screen screen-menu" id="screen-menu">
+    <div class="menu-box">
+      <div class="menu-decoration">🌲 🍄 🌲</div>
+      <h2 class="menu-title">La Forêt Sacrée</h2>
+      <p class="menu-subtitle">Un mal ancien menace les gardiens de la forêt...</p>
+      <button class="main-btn" id="newGameBtn">Nouvelle Partie</button>
+    </div>
+  </div>
+
+  <!-- =================================================
+       ÉCRAN 2 : DIALOGUE (VISUAL NOVEL)
+       ================================================= -->
+  <div class="screen screen-dialogue" id="screen-dialogue" style="display:none;">
+    <div class="dialogue-scene">
+
+      <div class="dialogue-box">
+
+        <!-- Carré "photo d'identité" du Mage, en haut à gauche de la boîte.
+             Le 'src' de cette image est changé dynamiquement en JS selon l'humeur. -->
+        <div class="mage-portrait-wrapper">
+          <img id="magePortraitImg" src="../sprites/PNJ/mage_neutre.png" alt="Portrait du Mage">
+        </div>
+
+        <div class="dialogue-speaker">Le Vieux Mage</div>
+        <div class="dialogue-text" id="dialogueText"></div>
+
+        <!-- Bouton "Suivant" : visible pour les répliques simples -->
+        <button class="dialogue-next-btn" id="dialogueNextBtn">Suivant ▶</button>
+
+        <!-- Choix Oui/Non : visible uniquement à l'étape du choix -->
+        <div class="dialogue-choices" id="dialogueChoices" style="display:none;">
+          <button class="choice-btn choice-yes" id="choiceYesBtn">Oui</button>
+          <button class="choice-btn choice-no" id="choiceNoBtn">Non</button>
+        </div>
+
+        <!-- Bouton final pour entrer dans la Forge -->
+        <button class="enter-forge-btn" id="enterForgeBtn" style="display:none;">Entrer dans la Forge 🔥</button>
+      </div>
+
+    </div>
+
+    <!-- Overlay de remise du Pinceau Magique : caché par défaut,
+         affiché en plein écran juste après le clic sur [Oui], avant l'ouverture de l'éditeur. -->
+    <div class="giving-overlay" id="givingOverlay" style="display:none;">
+      <img class="giving-artifact-img" src="../sprites/UI/pinceau_magique.png" alt="Le Pinceau Magique">
+      <div class="giving-caption" id="givingCaption">Le Mage te tend le Pinceau Magique...</div>
+    </div>
+  </div>
+
+  <!-- =================================================
+       ÉCRAN 3 : ÉDITEUR DE PIXEL ART
+       ================================================= -->
+  <div class="screen screen-editor" id="screen-editor" style="display:none;">
+    <div class="main-layout">
+
+      <!-- ============ PANNEAU GAUCHE : OUTILS ============ -->
+      <div class="panel left-panel">
+
+        <h2 class="panel-title"><span class="leaf-icon">🍃</span> Taille de Grille</h2>
+        <div class="grid-size-options">
+          <button class="grid-size-btn" data-size="32">32 × 32 (Petit)</button>
+          <button class="grid-size-btn active" data-size="64">64 × 64 (Moyen)</button>
+          <button class="grid-size-btn" data-size="128">128 × 128 (Grand)</button>
+        </div>
+
+        <h2 class="panel-title"><span class="leaf-icon">🛠️</span> Outils</h2>
+        <div class="tool-buttons">
+          <button class="tool-btn active" data-tool="brush">
+            <span class="tool-icon">🖌️</span> Pinceau
+          </button>
+          <button class="tool-btn" data-tool="eraser">
+            <span class="tool-icon">🧹</span> Gomme
+          </button>
+          <button class="tool-btn" data-tool="fill">
+            <span class="tool-icon">🪣</span> Remplir
+          </button>
+        </div>
+
+        <h3 class="tool-subtitle">Formes Prêtes</h3>
+        <div class="tool-buttons shape-buttons">
+          <button class="tool-btn shape-btn" data-tool="shape-square">
+            <span class="tool-icon">⬛</span> Carré
+          </button>
+          <button class="tool-btn shape-btn" data-tool="shape-circle">
+            <span class="tool-icon">⚫</span> Rond
+          </button>
+          <button class="tool-btn shape-btn" data-tool="shape-triangle">
+            <span class="tool-icon">🔺</span> Triangle
+          </button>
+        </div>
+
+        <div class="tool-buttons" style="margin-top: 14px;">
+          <button class="tool-btn clear-btn" id="clearAllBtn">
+            <span class="tool-icon">🔥</span> Tout effacer
+          </button>
+        </div>
+
+        <h2 class="panel-title"><span class="leaf-icon">🔍</span> Zoom</h2>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomOutBtn">−</button>
+          <div class="zoom-display" id="zoomDisplay">100%</div>
+          <button class="zoom-btn" id="zoomInBtn">+</button>
+        </div>
+        <p class="zoom-hint">Astuce : la molette de la souris zoome aussi !</p>
+
+      </div>
+
+      <!-- ============ PANNEAU CENTRAL : CANVAS ============ -->
+      <div class="panel center-panel">
+        <h2 class="panel-title"><span class="leaf-icon">🎨</span> Atelier de Création</h2>
+
+        <div class="canvas-viewport" id="canvasViewport">
+          <canvas id="pixelCanvas"></canvas>
+        </div>
+
+        <div class="canvas-info-bar">
+          <span id="gridSizeInfo">Grille : 64 × 64</span>
+          <span id="zoomInfo">Zoom : 100%</span>
+          <span id="toolInfo">Outil : Pinceau</span>
+        </div>
+      </div>
+
+      <!-- ============ PANNEAU DROIT : PALETTE + INFOS ============ -->
+      <div class="panel right-panel">
+
+        <h2 class="panel-title"><span class="leaf-icon">🌈</span> Sélecteur de Couleur</h2>
+
+        <div class="color-picker-wrapper">
+          <!-- Carré principal : axe horizontal = saturation, axe vertical = luminosité (à teinte fixe) -->
+          <div class="sv-square-container">
+            <canvas id="svSquareCanvas" width="200" height="200"></canvas>
+            <div class="sv-cursor" id="svCursor"></div>
+          </div>
+
+          <!-- Bande de teinte (roue chromatique aplatie en barre horizontale) -->
+          <div class="hue-slider-container">
+            <canvas id="hueSliderCanvas" width="200" height="22"></canvas>
+            <div class="hue-cursor" id="hueCursor"></div>
+          </div>
+
+          <!-- Saisie hexadécimale pour une précision absolue au clavier -->
+          <div class="hex-input-row">
+            <label for="hexInput">Hex</label>
+            <input type="text" id="hexInput" maxlength="7" value="#3f6b2b" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="current-color-display">
+          <div class="current-color-swatch" id="currentColorSwatch"></div>
+          <div class="current-color-label">Couleur sélectionnée</div>
+        </div>
+
+        <h2 class="panel-title" style="margin-top: 20px;"><span class="leaf-icon">📜</span> Identité</h2>
+
+        <div class="form-group">
+          <label for="creatureName">Nom de la créature</label>
+          <input type="text" id="creatureName" maxlength="24" placeholder="Ex : Foliandre">
+          <div class="char-counter"><span id="nameCount">0</span>/24</div>
+        </div>
+
+        <div class="form-group">
+          <label for="creatureDesc">Description</label>
+          <textarea id="creatureDesc" maxlength="150" rows="4" placeholder="Ex : Une petite créature des bois qui aime se cacher sous les fougères..."></textarea>
+          <div class="char-counter"><span id="descCount">0</span>/150</div>
+        </div>
+
+        <div class="creature-preview-box">
+          <div class="preview-label">Aperçu (taille réelle)</div>
+          <canvas id="previewCanvas"></canvas>
+        </div>
+
+        <button class="validate-btn" id="validateBtn">Valider la créature</button>
+        <div class="validation-message" id="validationMsg"></div>
+
+      </div>
+
+    </div>
+
+    <!-- =================================================
+         OVERLAY COMMUN : fond assombri pour toute la séquence
+         post-validation (loterie + questionnaire du Mage).
+         L'éditeur reste visible (légèrement voilé) derrière.
+         ================================================= -->
+    <div class="post-validation-overlay" id="postValidationOverlay" style="display:none;">
+
+      <!-- ===== ROUE N°1 : L'alignement des astres ===== -->
+      <div class="lottery-stage" id="wheel1Stage">
+        <h2 class="lottery-title">🎡 L'Alignement des Astres</h2>
+        <p class="lottery-subtitle">Le destin de ta créature se joue maintenant...</p>
+
+        <div class="wheel-layout">
+          <div class="wheel-container">
+            <div class="wheel-disc">
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- Normale 85% : arc de 54° à 360° -->
+                <path d="M50,50 L90.5,20.6 A50,50 0 1,1 65.5,2.4 Z" fill="#7a6347"/>
+                <!-- Talent 10% : arc de 18° à 54° -->
+                <path d="M50,50 L65.5,2.4 A50,50 0 0,1 90.5,20.6 Z" fill="#3f5c35"/>
+                <!-- Shiny 5% : arc de 0° à 18° -->
+                <path d="M50,50 L50,0 A50,50 0 0,1 65.5,2.4 Z" fill="#c9a24b"/>
+                <!-- Séparatrices -->
+                <line x1="50" y1="50" x2="50" y2="0"       stroke="#1a1410" stroke-width="1.5"/>
+                <line x1="50" y1="50" x2="65.5" y2="2.4"   stroke="#1a1410" stroke-width="1.5"/>
+                <line x1="50" y1="50" x2="90.5" y2="20.6"  stroke="#1a1410" stroke-width="1.5"/>
+                <!-- Labels aux centroïdes exacts -->
+                <text x="34.1" y="83.2" text-anchor="middle" font-size="7" fill="#f5ecd4" font-weight="bold">85%</text>
+                <text x="70.6" y="23.7" text-anchor="middle" font-size="6" fill="#f5ecd4" font-weight="bold">10%</text>
+                <text x="55.5" y="17.4" text-anchor="middle" font-size="5" fill="#1a1410" font-weight="bold">5%</text>
+              </svg>
+              <!-- Aiguille et hub DANS le disc (position:relative stable, pas de transform parent) -->
+              <div class="wheel-needle-pivot" id="wheel1Needle">
+                <div class="wheel-needle"></div>
+              </div>
+              <div class="wheel-hub"></div>
+            </div>
+          </div>
+
+          <div class="wheel-info-panel">
+            <div class="wheel-info-title">Cases de la roue</div>
+            <div class="wheel-info-items" id="wheel1InfoItems">
+              <div class="wheel-info-item" data-result="shiny">
+                <div class="wheel-info-color" style="background:#c9a24b;"></div>
+                <span>✨ Shiny (5%) — +10% toutes stats</span>
+              </div>
+              <div class="wheel-info-item" data-result="talent">
+                <div class="wheel-info-color" style="background:#3f5c35;"></div>
+                <span>🎁 Compétence (10%) — Talent exclusif</span>
+              </div>
+              <div class="wheel-info-item" data-result="normale">
+                <div class="wheel-info-color" style="background:#7a6347;"></div>
+                <span>⚔️ Normale (85%) — Création classique</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="lottery-spin-btn" id="spinWheel1Btn">Lancer la roue</button>
+      </div>
+
+      <!-- ===== ROUE N°2 : Le Tambour des Talents ===== -->
+      <div class="lottery-stage" id="wheel2Stage" style="display:none;">
+        <h2 class="lottery-title">🎁 Le Tambour des Talents</h2>
+        <p class="lottery-subtitle">Une compétence exclusive t'attend...</p>
+
+        <div class="wheel-layout">
+          <div class="wheel-container">
+            <div class="wheel-disc">
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- 6 × 60° -->
+                <path d="M50,50 L50,0 A50,50 0 0,1 93.3,25 Z"   fill="#3f5c35"/>
+                <path d="M50,50 L93.3,25 A50,50 0 0,1 93.3,75 Z" fill="#c9a24b"/>
+                <path d="M50,50 L93.3,75 A50,50 0 0,1 50,100 Z"  fill="#a23b3b"/>
+                <path d="M50,50 L50,100 A50,50 0 0,1 6.7,75 Z"   fill="#7a9669"/>
+                <path d="M50,50 L6.7,75 A50,50 0 0,1 6.7,25 Z"   fill="#7a6347"/>
+                <path d="M50,50 L6.7,25 A50,50 0 0,1 50,0 Z"     fill="#2d4427"/>
+                <!-- Séparatrices -->
+                <line x1="50" y1="50" x2="50"   y2="0"   stroke="#1a1410" stroke-width="1.2"/>
+                <line x1="50" y1="50" x2="93.3" y2="25"  stroke="#1a1410" stroke-width="1.2"/>
+                <line x1="50" y1="50" x2="93.3" y2="75"  stroke="#1a1410" stroke-width="1.2"/>
+                <line x1="50" y1="50" x2="50"   y2="100" stroke="#1a1410" stroke-width="1.2"/>
+                <line x1="50" y1="50" x2="6.7"  y2="75"  stroke="#1a1410" stroke-width="1.2"/>
+                <line x1="50" y1="50" x2="6.7"  y2="25"  stroke="#1a1410" stroke-width="1.2"/>
+                <!-- Numéros aux centroïdes exacts -->
+                <text x="67" y="22.6" text-anchor="middle" font-size="9" fill="#f5ecd4" font-weight="bold">1</text>
+                <text x="84" y="52"   text-anchor="middle" font-size="9" fill="#1a1410" font-weight="bold">2</text>
+                <text x="67" y="81.4" text-anchor="middle" font-size="9" fill="#f5ecd4" font-weight="bold">3</text>
+                <text x="33" y="81.4" text-anchor="middle" font-size="9" fill="#f5ecd4" font-weight="bold">4</text>
+                <text x="16" y="52"   text-anchor="middle" font-size="9" fill="#f5ecd4" font-weight="bold">5</text>
+                <text x="33" y="22.6" text-anchor="middle" font-size="9" fill="#f5ecd4" font-weight="bold">6</text>
+              </svg>
+              <!-- Aiguille et hub DANS le disc -->
+              <div class="wheel-needle-pivot" id="wheel2Needle">
+                <div class="wheel-needle"></div>
+              </div>
+              <div class="wheel-hub"></div>
+            </div>
+          </div>
+
+          <div class="wheel-info-panel">
+            <div class="wheel-info-title">Les 6 Talents</div>
+            <div class="wheel-info-items" id="wheel2InfoItems">
+              <div class="wheel-info-item" data-talent-index="0">
+                <div class="wheel-info-color" style="background:#3f5c35;"></div>
+                <span>1 — Surcharge Critique</span>
+              </div>
+              <div class="wheel-info-item" data-talent-index="1">
+                <div class="wheel-info-color" style="background:#c9a24b;"></div>
+                <span>2 — Peau de Glyphe</span>
+              </div>
+              <div class="wheel-info-item" data-talent-index="2">
+                <div class="wheel-info-color" style="background:#a23b3b;"></div>
+                <span>3 — Sangsue d'Encre</span>
+              </div>
+              <div class="wheel-info-item" data-talent-index="3">
+                <div class="wheel-info-color" style="background:#7a9669;"></div>
+                <span>4 — Écho du Néant</span>
+              </div>
+              <div class="wheel-info-item" data-talent-index="4">
+                <div class="wheel-info-color" style="background:#7a6347;"></div>
+                <span>5 — Aura Incandescente</span>
+              </div>
+              <div class="wheel-info-item" data-talent-index="5">
+                <div class="wheel-info-color" style="background:#2d4427;"></div>
+                <span>6 — Volonté Végétale</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="lottery-spin-btn" id="spinWheel2Btn">Lancer la roue</button>
+      </div>
+
+      <!-- ===== RÉCAPITULATIF DE LA LOTERIE ===== -->
+      <div class="lottery-stage" id="lotteryResultStage" style="display:none;">
+        <h2 class="lottery-title" id="lotteryResultTitle">Résultat</h2>
+        <div class="lottery-result-card" id="lotteryResultCard"></div>
+        <button class="lottery-continue-btn" id="lotteryContinueBtn">Continuer vers le Mage</button>
+      </div>
+
+      <!-- ===== QUESTIONNAIRE DU MAGE : détermination de l'archétype ===== -->
+      <div class="lottery-stage" id="archetypeQuestionStage" style="display:none;">
+        <h2 class="lottery-title">🧙‍♂️ Le Mage t'interroge</h2>
+        <p class="lottery-subtitle">« Quelle voie ta créature empruntera-t-elle ? »</p>
+
+        <div class="archetype-choices" id="archetypeChoices">
+          <button class="archetype-btn" data-archetype="physical_attacker">
+            <span class="archetype-name">⚔️ Attaquant Physique</span>
+            <span class="archetype-desc">Boost ATK / VIT</span>
+          </button>
+          <button class="archetype-btn" data-archetype="special_attacker">
+            <span class="archetype-name">🔮 Mage / Attaquant Spécial</span>
+            <span class="archetype-desc">Boost ATK SPÉ / VIT</span>
+          </button>
+          <button class="archetype-btn" data-archetype="physical_tank">
+            <span class="archetype-name">🛡️ Tank Physique</span>
+            <span class="archetype-desc">Boost PV / DEF</span>
+          </button>
+          <button class="archetype-btn" data-archetype="special_tank">
+            <span class="archetype-name">🌀 Tank Spécial</span>
+            <span class="archetype-desc">Boost PV / DEF SPÉ</span>
+          </button>
+          <button class="archetype-btn" data-archetype="speedster">
+            <span class="archetype-name">💨 Speedster / Éclaireur</span>
+            <span class="archetype-desc">Boost VIT / ATK / Critique</span>
+          </button>
+          <button class="archetype-btn" data-archetype="balanced">
+            <span class="archetype-name">⚖️ Équilibré</span>
+            <span class="archetype-desc">Progression moyenne et égale partout</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== RÉCAPITULATIF DE L'ARCHÉTYPE CHOISI ===== -->
+      <div class="lottery-stage" id="archetypeRecapStage" style="display:none;">
+        <h2 class="lottery-title">📜 Récapitulatif</h2>
+        <div class="archetype-recap-card">
+          <p class="archetype-recap-text" id="archetypeRecapText"></p>
+        </div>
+        <div class="archetype-recap-actions">
+          <button class="archetype-restart-btn" id="archetypeRestartBtn">↺ Recommencer</button>
+          <button class="archetype-accept-btn" id="archetypeAcceptBtn">✓ Accepter</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- =================================================
+       ÉCRAN 4 : COMBAT
+       ================================================= -->
+  <div class="screen screen-combat" id="screen-combat" style="display:none;">
+
+    <!-- Voile noir de transition, se dissipe à l'arrivée sur l'écran -->
+    <div class="combat-entry-veil" id="combatEntryVeil"></div>
+
+    <!-- Bandeau vague en haut -->
+    <div class="combat-wave-bar">
+      <span class="wave-label">⚔️ Vague <span id="waveNumber">1</span> / 100</span>
+      <div class="wave-progress-track">
+        <div class="wave-progress-fill" id="waveProgressFill" style="width:1%;"></div>
+      </div>
+      <span id="waveEnemyLabel">Très facile</span>
+    </div>
+
+    <!-- Zone de l'arène : conteneur de la scène 3D Three.js (HD2D) -->
+    <div class="poke-arena" id="combat3d-container">
+
+      <!-- Canvas de travail caché : dessine le pixel art de la créature en 2D,
+           qui est ensuite envoyé comme texture à la scène 3D (Combat3D.setPlayerSpriteFromCanvas) -->
+      <canvas id="playerPixelCanvas" width="64" height="64" style="display:none;"></canvas>
+
+      <!-- HUD ennemi : en haut à gauche -->
+      <div class="poke-hud poke-hud-enemy" id="enemyHud">
+        <div class="poke-hud-name">
+          <span id="enemyName">?</span>
+          <span class="poke-hud-level">Niv.<span id="enemyLevel">1</span></span>
+        </div>
+        <div class="poke-hp-row">
+          <span class="poke-hp-label">HP</span>
+          <div class="poke-hp-track">
+            <div class="poke-hp-fill" id="enemyHpBar" style="width:100%;"></div>
+          </div>
+        </div>
+        <div class="poke-hp-numbers" id="enemyHpText">? / ?</div>
+      </div>
+
+      <!-- HUD joueur : en bas à droite -->
+      <div class="poke-hud poke-hud-player" id="playerHud">
+        <div class="poke-hud-name">
+          <span id="playerName">Ta créature</span>
+          <span class="poke-hud-level">Niv.<span id="playerLevel">1</span></span>
+        </div>
+        <div class="poke-hp-row">
+          <span class="poke-hp-label">HP</span>
+          <div class="poke-hp-track">
+            <div class="poke-hp-fill" id="playerHpBar" style="width:100%;"></div>
+          </div>
+          <span class="poke-hp-numbers" id="playerHpText">45/45</span>
+        </div>
+        <div class="poke-xp-row">
+          <span class="poke-xp-label">EXP</span>
+          <div class="poke-xp-track">
+            <div class="poke-xp-fill" id="playerXpBar" style="width:0%;"></div>
+          </div>
+        </div>
+        <div class="poke-xp-numbers"><span id="playerXpText">0 / 8</span></div>
+      </div>
+
+    </div><!-- /poke-arena (combat3d-container) -->
+
+    <!-- Boîte de dialogue et actions (style Pokémon) -->
+    <div class="poke-dialog-box">
+
+      <!-- Texte du combat : UN seul message à la fois, affiché en machine à écrire -->
+      <div class="poke-dialog-text" id="dialogTextWrapper">
+        <span id="combatLog"></span>
+        <span class="dialog-cursor" id="dialogCursor"></span>
+        <span class="dialog-next-arrow" id="dialogNextArrow">▼</span>
+      </div>
+
+      <!-- 4 boutons à droite -->
+      <div class="poke-action-grid" id="combatActions">
+        <button class="poke-action-btn" id="actionAttack">ATTAQUE</button>
+        <button class="poke-action-btn" id="actionSpecial">MAGIE</button>
+        <button class="poke-action-btn poke-action-defend" id="actionDefend">DÉFENSE</button>
+        <button class="poke-action-btn poke-action-flee" id="actionFlee">FUIR</button>
+      </div>
+
+      <!-- Indicateur "ennemi joue" -->
+      <div class="poke-waiting" id="combatWaiting">
+        <span id="waitingText">▶ L'ennemi prépare son attaque...</span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script src="three-bundle.js" defer></script>
+<script src="combat3d.js" defer></script>
+<script src="script.js" defer></script>
+</body>
+</html>
