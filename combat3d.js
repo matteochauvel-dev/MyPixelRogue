@@ -22,7 +22,7 @@ let clock;
 let isInitialized = false;
 
 const PARTICLE_COUNT = 120;
-const PARTICLE_ZONE = { xMin: -4.5, xMax: 4.5, yMin: 0, yMax: 3.5, zMin: -4, zMax: 3 };
+const PARTICLE_ZONE = { xMin: -4.5, xMax: 4.5, yMin: 0, yMax: 2.3, zMin: -4, zMax: 3 };
 let particleSpeeds, particleDrift;
 
 // Positions des sprites dans la scène (mêmes valeurs validées dans le fichier de test)
@@ -192,7 +192,7 @@ function initCombat3D(containerId) {
   composer.addPass(new RenderPass(scene, camera));
 
   const bloomResolution = new THREE.Vector2(safeWidth, safeHeight);
-  bloomPass = new UnrealBloomPass(bloomResolution, 0.5, 0.4, 0.86);
+  bloomPass = new UnrealBloomPass(bloomResolution, 0.35, 0.4, 0.95);
   // strength=0.5 (intensité modérée, pour un halo discret plutôt qu'un effet excessif
   // qui dénaturerait le pixel art), radius=0.4, threshold=0.86 (seules les zones les
   // plus lumineuses de la scène - le ciel clair, les particules dorées - déclenchent le bloom)
