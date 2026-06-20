@@ -44819,7 +44819,7 @@ void main() {
 
   // entry.js
   window.THREE = three_module_exports;
-  window.THREE_ADDONS = { EffectComposer, RenderPass, BokehPass, OutputPass, UnrealBloomPass };
+  window.THREE_ADDONS = { EffectComposer, RenderPass, BokehPass, OutputPass, UnrealBloomPass, ShaderPass };
 })();
 /*! Bundled license information:
 

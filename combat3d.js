@@ -13,9 +13,9 @@
 // nécessaires en un seul fichier sans import/export, compatible file://.
 
 const THREE = window.THREE;
-const { EffectComposer, RenderPass, BokehPass, OutputPass, UnrealBloomPass } = window.THREE_ADDONS;
+const { EffectComposer, RenderPass, BokehPass, OutputPass, UnrealBloomPass, ShaderPass } = window.THREE_ADDONS;
 
-let scene, camera, renderer, composer, bokehPass, bloomPass;
+let scene, camera, renderer, bloomComposer, finalComposer, bokehPass, bloomPass, mixPass;
 let enemySprite, playerSprite;
 let clock;
 let isInitialized = false;
@@ -28,6 +28,30 @@ const PLAYER_POSITION = { x: -2, y: 1.0, z: 1.5 };
 // importe le ratio de leur image source. La largeur est calculée proportionnellement
 // à cette hauteur pour ne jamais déformer l'image (voir setEnemySpriteFrame).
 const ENEMY_SPRITE_HEIGHT = 2.6;
+
+// --- Bloom sélectif : seul le calque BLOOM_SCENE reçoit l'effet de halo lumineux.
+// Tous les autres objets (sol, rochers, sprites des personnages) restent exclus,
+// ce qui évite que le bloom délave les sprites en pixel art (problème observé
+// avec UnrealBloomPass appliqué à toute la scène sans distinction).
+const BLOOM_SCENE = 1;
+const bloomLayer = new THREE.Layers();
+bloomLayer.set(BLOOM_SCENE);
+const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const materialsBackup = {};
+
+function darkenNonBloomed(obj) {
+  if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+    materialsBackup[obj.uuid] = obj.material;
+    obj.material = darkMaterial;
+  }
+}
+
+function restoreMaterial(obj) {
+  if (materialsBackup[obj.uuid]) {
+    obj.material = materialsBackup[obj.uuid];
+    delete materialsBackup[obj.uuid];
+  }
+}
 
 /**
  * Initialise toute la scène 3D. À appeler UNE SEULE FOIS, au premier chargement
@@ -125,6 +149,16 @@ function initCombat3D(containerId) {
     scene.add(rock);
   }
 
+  // --- Soleil lumineux : SEUL objet de la scène assigné au calque bloom.
+  // C'est ce qui permet un bloom "sélectif" qui ne touche jamais les sprites
+  // des personnages (voir BLOOM_SCENE et bloomLayer plus loin).
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff4d6 });
+  const sunMesh = new THREE.Mesh(new THREE.CircleGeometry(1.1, 24), sunMat);
+  sunMesh.position.set(-5, 6, -12);
+  sunMesh.lookAt(camera.position);
+  sunMesh.layers.set(BLOOM_SCENE);
+  scene.add(sunMesh);
+
   // --- Sprites billboard (placeholders au départ, remplacés via setXxxSprite) ---
   const placeholderTexture = buildPlaceholderTexture('#3d3d5c');
   const enemyMat = new THREE.SpriteMaterial({ map: placeholderTexture, transparent: true });
@@ -151,20 +185,58 @@ function initCombat3D(containerId) {
   // et "bas de l'écran" sont garantis correspondre aux vraies limites visuelles.
   createDOMParticles(container);
 
-  // --- Post-processing : bloom puis flou de profondeur ---
-  composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
+  // --- Post-processing : bloom SÉLECTIF (uniquement sur le calque BLOOM_SCENE,
+  // donc uniquement le soleil) puis flou de profondeur sur le rendu final ---
 
+  // 1) bloomComposer : calcule le bloom, mais ne l'affiche jamais directement à
+  // l'écran (renderToScreen = false). On en récupère seulement la texture résultante.
+  bloomComposer = new EffectComposer(renderer);
+  bloomComposer.renderToScreen = false;
+  bloomComposer.addPass(new RenderPass(scene, camera));
   const bloomResolution = new THREE.Vector2(safeWidth, safeHeight);
-  bloomPass = new UnrealBloomPass(bloomResolution, 0.35, 0.4, 0.95);
-  // strength=0.5 (intensité modérée, pour un halo discret plutôt qu'un effet excessif
-  // qui dénaturerait le pixel art), radius=0.4, threshold=0.86 (seules les zones les
-  // plus lumineuses de la scène - le ciel clair, les particules dorées - déclenchent le bloom)
-  composer.addPass(bloomPass);
+  bloomPass = new UnrealBloomPass(bloomResolution, 1.1, 0.4, 0.1);
+  // threshold bas (0.1) car seul le soleil (déjà isolé sur son propre calque) est
+  // rendu dans ce composer — tout le reste de la scène est assombri en noir avant
+  // ce rendu (voir darkenNonBloomed dans la boucle d'animation), donc threshold n'a
+  // plus besoin d'être restrictif comme avec un bloom appliqué à toute la scène.
+  bloomComposer.addPass(bloomPass);
+
+  // 2) Shader de fusion : combine le rendu normal (baseTexture) avec la texture
+  // de bloom calculée ci-dessus (bloomTexture), en les additionnant.
+  mixPass = new ShaderPass(
+    new THREE.ShaderMaterial({
+      uniforms: {
+        baseTexture: { value: null },
+        bloomTexture: { value: bloomComposer.renderTarget2.texture },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D baseTexture;
+        uniform sampler2D bloomTexture;
+        varying vec2 vUv;
+        void main() {
+          gl_FragColor = (texture2D(baseTexture, vUv) + vec4(1.0) * texture2D(bloomTexture, vUv));
+        }
+      `,
+    }),
+    'baseTexture'
+  );
+
+  // 3) finalComposer : rendu normal de la scène complète, fusionné avec le bloom
+  // du soleil, puis flou de profondeur, puis sortie finale à l'écran.
+  finalComposer = new EffectComposer(renderer);
+  finalComposer.addPass(new RenderPass(scene, camera));
+  finalComposer.addPass(mixPass);
 
   bokehPass = new BokehPass(scene, camera, { focus: 5.4, aperture: 0.018, maxblur: 0 });
-  composer.addPass(bokehPass);
-  composer.addPass(new OutputPass());
+  finalComposer.addPass(bokehPass);
+  finalComposer.addPass(new OutputPass());
 
   // --- Boucle de rendu ---
   clock = new THREE.Clock();
@@ -179,7 +251,15 @@ function initCombat3D(containerId) {
     enemySprite.position.y = ENEMY_POSITION.y + Math.sin(t * 2.1) * 0.06;
     playerSprite.position.y = PLAYER_POSITION.y + Math.sin(t * 1.8 + 1) * 0.06;
 
-    composer.render();
+    // Séquence du bloom sélectif (voir commentaire à la définition de BLOOM_SCENE) :
+    // 1) on assombrit tout ce qui n'est pas sur le calque bloom (donc tout sauf le soleil)
+    // 2) on rend bloomComposer : ne capture que le halo du soleil, dans une texture
+    // 3) on restaure les matériaux originaux de la scène
+    // 4) on rend finalComposer : scène complète + bloom fusionné + flou de profondeur
+    scene.traverse(darkenNonBloomed);
+    bloomComposer.render();
+    scene.traverse(restoreMaterial);
+    finalComposer.render();
   }
   animate();
 
@@ -195,7 +275,8 @@ function initCombat3D(containerId) {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
-    composer.setSize(w, h);
+    bloomComposer.setSize(w, h);
+    finalComposer.setSize(w, h);
     bloomPass.setSize(w, h);
     console.log('Combat3D: taille du renderer synchronisée sur le conteneur :', w, 'x', h);
   }
@@ -254,13 +335,13 @@ function createDOMParticles(container) {
     document.head.appendChild(styleEl);
   }
 
-  const PARTICLE_COUNT_DOM = 40;
+  const PARTICLE_COUNT_DOM = 18;
   for (let i = 0; i < PARTICLE_COUNT_DOM; i++) {
     const el = document.createElement('div');
     el.className = 'combat3d-particle';
     const size = 3 + Math.random() * 4; // 3 à 7px
     const leftPercent = Math.random() * 100;
-    const duration = 6 + Math.random() * 6; // 6 à 12s pour traverser tout l'écran
+    const duration = 12 + Math.random() * 8; // 12 à 20s pour traverser tout l'écran (plus lent)
     const delay = Math.random() * duration; // décale le départ de chaque particule
     const driftPx = (Math.random() - 0.5) * 60; // léger flottement horizontal, -30px à +30px
 
