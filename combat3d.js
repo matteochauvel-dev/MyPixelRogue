@@ -17,13 +17,8 @@ const { EffectComposer, RenderPass, BokehPass, OutputPass, UnrealBloomPass } = w
 
 let scene, camera, renderer, composer, bokehPass, bloomPass;
 let enemySprite, playerSprite;
-let particleGeometry, particleSystem;
 let clock;
 let isInitialized = false;
-
-const PARTICLE_COUNT = 120;
-const PARTICLE_ZONE = { xMin: -4.5, xMax: 4.5, yMin: 0, yMax: 2.3, zMin: -4, zMax: 3 };
-let particleSpeeds, particleDrift;
 
 // Positions des sprites dans la scène (mêmes valeurs validées dans le fichier de test)
 const ENEMY_POSITION = { x: 2.2, y: 1.0, z: -1.5 };
@@ -148,44 +143,13 @@ function initCombat3D(containerId) {
   addGroundShadow(ENEMY_POSITION.x, ENEMY_POSITION.z, 0.5);
   addGroundShadow(PLAYER_POSITION.x, PLAYER_POSITION.z, 0.55);
 
-  // --- Particules ambiantes ---
-  particleGeometry = new THREE.BufferGeometry();
-  // IMPORTANT : Float32BufferAttribute fait une COPIE interne du tableau qu'on lui
-  // passe (vérifié empiriquement) — donc on ne doit JAMAIS garder de référence séparée
-  // au tableau d'origine pour le modifier plus tard. À la place, on crée l'attribut
-  // d'abord avec des zéros, puis on travaille uniquement sur sa référence interne
-  // (particleGeometry.attributes.position.array), qui est la seule source de vérité
-  // lue par le rendu. Sans cette précaution, resetParticle() modifierait un tableau
-  // fantôme jamais affiché, et les particules sembleraient "monter à l'infini" sans
-  // jamais être recyclées (exactement le bug observé).
-  particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(PARTICLE_COUNT * 3), 3));
-  const particlePositions = particleGeometry.attributes.position.array;
-  particleSpeeds = new Float32Array(PARTICLE_COUNT);
-  particleDrift = new Float32Array(PARTICLE_COUNT);
-
-  function resetParticle(i, randomizeY) {
-    particlePositions[i * 3 + 0] = PARTICLE_ZONE.xMin + Math.random() * (PARTICLE_ZONE.xMax - PARTICLE_ZONE.xMin);
-    particlePositions[i * 3 + 1] = randomizeY
-      ? PARTICLE_ZONE.yMin + Math.random() * (PARTICLE_ZONE.yMax - PARTICLE_ZONE.yMin)
-      : PARTICLE_ZONE.yMin;
-    particlePositions[i * 3 + 2] = PARTICLE_ZONE.zMin + Math.random() * (PARTICLE_ZONE.zMax - PARTICLE_ZONE.zMin);
-    particleSpeeds[i] = 0.15 + Math.random() * 0.25;
-    particleDrift[i] = Math.random() * Math.PI * 2;
-  }
-  for (let i = 0; i < PARTICLE_COUNT; i++) resetParticle(i, true);
-  particleGeometry.attributes.position.needsUpdate = true; // après la première initialisation manuelle
-  particleGeometry.userData.resetParticle = resetParticle; // exposé pour la boucle d'animation
-
-  const particleMaterial = new THREE.PointsMaterial({
-    color: 0xfff2c8,
-    size: 0.13,
-    transparent: true,
-    opacity: 0.9,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
-  particleSystem = new THREE.Points(particleGeometry, particleMaterial);
-  scene.add(particleSystem);
+  // --- Particules ambiantes : overlay HTML/CSS, PAS dans la scène 3D ---
+  // Les particules 3D (THREE.Points) sont sujettes à la perspective : une particule
+  // proche de la caméra sort du cadre visible plus vite qu'une particule lointaine,
+  // donc aucune limite Y unique ne peut satisfaire toutes les profondeurs en même
+  // temps. En les plaçant en overlay HTML/CSS par-dessus le canvas, "haut de l'écran"
+  // et "bas de l'écran" sont garantis correspondre aux vraies limites visuelles.
+  createDOMParticles(container);
 
   // --- Post-processing : bloom puis flou de profondeur ---
   composer = new EffectComposer(renderer);
@@ -214,16 +178,6 @@ function initCombat3D(containerId) {
     const t = clock.getElapsedTime();
     enemySprite.position.y = ENEMY_POSITION.y + Math.sin(t * 2.1) * 0.06;
     playerSprite.position.y = PLAYER_POSITION.y + Math.sin(t * 1.8 + 1) * 0.06;
-
-    const positions = particleGeometry.attributes.position.array;
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      positions[i * 3 + 1] += particleSpeeds[i] * 0.016;
-      positions[i * 3 + 0] += Math.sin(t * 0.8 + particleDrift[i]) * 0.003;
-      if (positions[i * 3 + 1] > PARTICLE_ZONE.yMax) {
-        particleGeometry.userData.resetParticle(i, false);
-      }
-    }
-    particleGeometry.attributes.position.needsUpdate = true;
 
     composer.render();
   }
@@ -264,6 +218,63 @@ function initCombat3D(containerId) {
  * Crée une texture de secours simple (carré uni) utilisée tant qu'aucun vrai
  * sprite n'a été assigné, pour ne jamais avoir un Sprite invisible/cassé.
  */
+/**
+ * Crée des particules ambiantes en overlay HTML/CSS par-dessus le canvas 3D.
+ * Contrairement à des particules dans la scène 3D (THREE.Points), qui sont sujettes
+ * à la perspective (une particule proche sort du cadre plus vite qu'une lointaine),
+ * cette approche garantit que "haut de l'écran" et "bas de l'écran" correspondent
+ * TOUJOURS aux vraies limites visuelles du conteneur, quel que soit l'angle de caméra.
+ */
+function createDOMParticles(container) {
+  // Injecte le CSS d'animation une seule fois (peu importe le nombre d'appels)
+  if (!document.getElementById('combat3d-particle-style')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'combat3d-particle-style';
+    styleEl.textContent = `
+      .combat3d-particle {
+        position: absolute;
+        bottom: 0;
+        border-radius: 50%;
+        background: #fff2c8;
+        box-shadow: 0 0 6px 2px rgba(255, 235, 180, 0.8);
+        pointer-events: none;
+        z-index: 2;
+        opacity: 0;
+        animation-name: combat3dParticleRise;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+      }
+      @keyframes combat3dParticleRise {
+        0%   { transform: translate(0, 0); opacity: 0; }
+        10%  { opacity: 0.85; }
+        90%  { opacity: 0.6; }
+        100% { transform: translate(var(--drift), -100%); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
+
+  const PARTICLE_COUNT_DOM = 40;
+  for (let i = 0; i < PARTICLE_COUNT_DOM; i++) {
+    const el = document.createElement('div');
+    el.className = 'combat3d-particle';
+    const size = 3 + Math.random() * 4; // 3 à 7px
+    const leftPercent = Math.random() * 100;
+    const duration = 6 + Math.random() * 6; // 6 à 12s pour traverser tout l'écran
+    const delay = Math.random() * duration; // décale le départ de chaque particule
+    const driftPx = (Math.random() - 0.5) * 60; // léger flottement horizontal, -30px à +30px
+
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.left = leftPercent + '%';
+    el.style.setProperty('--drift', driftPx + 'px');
+    el.style.animationDuration = duration + 's';
+    el.style.animationDelay = '-' + delay + 's'; // délai négatif = certaines particules démarrent déjà "en cours"
+
+    container.appendChild(el);
+  }
+}
+
 function buildPlaceholderTexture(hexColor) {
   const canvas = document.createElement('canvas');
   canvas.width = 8; canvas.height = 8;
