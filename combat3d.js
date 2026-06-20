@@ -113,6 +113,7 @@ function initCombat3D(containerId) {
   // --- Décor de forêt dense : silhouettes 2D en sprites, réparties sur 3 bandes
   // de profondeur (lointain/moyen/proche) pour un effet de parallax HD2D. ---
   createForestDecor(scene);
+  createDeepForestBackdrop(scene);
 
   // --- Sprites billboard (placeholders au départ, remplacés via setXxxSprite) ---
   const placeholderTexture = buildPlaceholderTexture('#3d3d5c');
@@ -277,202 +278,176 @@ function createDOMParticles(container) {
   }
 }
 
+// Catalogue des fichiers de décor disponibles, par catégorie. Chaque catégorie
+// peut avoir plusieurs variantes (ex: 2 feuillus différents) piochées au hasard.
+const FOREST_DECOR_FILES = {
+  deciduous: ['sprites/decor/feuillu_01.png', 'sprites/decor/feuillu_02.png'],
+  bush: ['sprites/decor/buisson_01.png', 'sprites/decor/buisson_02.png', 'sprites/decor/buisson_03.png', 'sprites/decor/buisson_04.png'],
+  grass: ['sprites/decor/herbe_01.png', 'sprites/decor/herbe_02.png'],
+};
+
+// Hauteur de référence (en unités de scène) par catégorie d'élément, avant
+// application du multiplicateur d'échelle de la bande de profondeur. Les
+// buissons et herbes sont nettement plus bas que les arbres.
+const FOREST_ELEMENT_BASE_HEIGHT = {
+  deciduous: 1,
+  bush: 0.45,
+  grass: 0.3,
+};
+
+const forestTextureCache = {}; // évite de recharger la même image plusieurs fois
+
 /**
- * Dessine une silhouette de conifère (sapin étagé) sur un canvas 2D fourni.
+ * Charge une image de décor et exécute le callback une fois prête, avec son
+ * ratio d'aspect réel. Utilise une vraie balise <img> (pas THREE.TextureLoader)
+ * par cohérence avec setEnemySpriteFrame, et pour éviter tout risque de
+ * problème CORS si jamais le jeu est un jour rouvert en file:// localement.
  */
-function drawConiferSilhouette(ctx, cx, baseY, width, height, color) {
-  const layers = 4;
-  const layerH = height / layers;
-  ctx.fillStyle = color;
-  for (let i = 0; i < layers; i++) {
-    const yTop = baseY - height + i * layerH;
-    const yBot = yTop + layerH * 1.3;
-    const w = width * (1 - i / layers) * 0.9 + width * 0.15;
-    ctx.beginPath();
-    ctx.moveTo(cx - w / 2, yBot);
-    ctx.lineTo(cx, yTop);
-    ctx.lineTo(cx + w / 2, yBot);
-    ctx.closePath();
-    ctx.fill();
+function loadForestTexture(url, callback) {
+  if (forestTextureCache[url]) {
+    callback(forestTextureCache[url]);
+    return;
   }
-  ctx.fillStyle = '#3c2d1e';
-  ctx.fillRect(cx - width * 0.06, baseY - height * 0.15, width * 0.12, height * 0.15);
+  const imgEl = new Image();
+  imgEl.onload = () => {
+    const texture = new THREE.Texture(imgEl);
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+    const entry = { texture, aspectRatio: imgEl.naturalWidth / imgEl.naturalHeight };
+    forestTextureCache[url] = entry;
+    callback(entry);
+  };
+  imgEl.onerror = (err) => {
+    console.error('Combat3D: échec de chargement du décor :', url, err);
+  };
+  imgEl.src = url;
 }
 
 /**
- * Dessine une silhouette d'arbre feuillu (tronc + amas de cercles) sur un canvas 2D.
+ * Construit tout le décor de forêt : vrais sprites PNG (arbres, buissons,
+ * herbe) réparties sur 3 bandes de profondeur pour un effet de parallax HD2D.
+ * Les éléments lointains sont plus petits, plus pâles (désaturation
+ * atmosphérique via material.color, sans regénérer de texture) et plus
+ * nombreux ; les éléments proches sont plus grands, plus saturés, et
+ * projettent une ombre.
  */
-function drawDeciduousSilhouette(ctx, cx, baseY, width, height, color) {
-  const trunkH = height * 0.35;
-  ctx.fillStyle = '#463223';
-  ctx.fillRect(cx - width * 0.05, baseY - trunkH, width * 0.1, trunkH);
-
-  const foliageCy = baseY - trunkH - height * 0.4;
-  const blobs = [
-    [cx, foliageCy, width * 0.55],
-    [cx - width * 0.3, foliageCy + height * 0.12, width * 0.4],
-    [cx + width * 0.32, foliageCy + height * 0.1, width * 0.42],
-    [cx - width * 0.1, foliageCy - height * 0.2, width * 0.38],
-    [cx + width * 0.15, foliageCy - height * 0.22, width * 0.36],
-  ];
-  ctx.fillStyle = color;
-  for (const [bx, by, br] of blobs) {
-    ctx.beginPath();
-    ctx.arc(bx, by, br, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
 /**
- * Dessine une silhouette de buisson (amas de cercles bas) sur un canvas 2D.
+ * Crée le fond panoramique de "forêt profonde" : un grand plan texturé placé
+ * très loin derrière toutes les bandes d'arbres, avec un visuel volontairement
+ * flou et sombre (dégradé + silhouettes ovales indistinctes) pour suggérer une
+ * forêt qui continue à l'infini, sans dessiner d'arbres reconnaissables (qui
+ * casseraient l'illusion s'ils étaient nets à cette distance).
  */
-function drawBushSilhouette(ctx, cx, baseY, width, height, color) {
-  const blobs = [
-    [cx, baseY - height * 0.5, width * 0.4],
-    [cx - width * 0.28, baseY - height * 0.35, width * 0.32],
-    [cx + width * 0.28, baseY - height * 0.35, width * 0.32],
-    [cx - width * 0.12, baseY - height * 0.65, width * 0.3],
-    [cx + width * 0.14, baseY - height * 0.6, width * 0.28],
-  ];
-  ctx.fillStyle = color;
-  for (const [bx, by, br] of blobs) {
-    ctx.beginPath();
-    ctx.arc(bx, by, br, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-/**
- * Dessine une touffe d'herbe (brins triangulaires) sur un canvas 2D.
- */
-function drawGrassSilhouette(ctx, cx, baseY, width, height, color) {
-  const blades = 5;
-  ctx.fillStyle = color;
-  for (let i = 0; i < blades; i++) {
-    const offset = (i - blades / 2) * (width / blades);
-    const sway = Math.sin(i * 1.3) * width * 0.15;
-    ctx.beginPath();
-    ctx.moveTo(cx + offset - width * 0.04, baseY);
-    ctx.lineTo(cx + offset + sway, baseY - height);
-    ctx.lineTo(cx + offset + width * 0.04, baseY);
-    ctx.closePath();
-    ctx.fill();
-  }
-}
-
-/**
- * Construit une texture canvas pour un type d'élément de décor donné, avec une
- * couleur paramétrable (utilisé pour la désaturation atmosphérique selon la
- * profondeur : plus c'est loin, plus la couleur est pâle/bleutée).
- */
-function buildForestElementTexture(type, color) {
+function createDeepForestBackdrop(scene) {
   const canvas = document.createElement('canvas');
-  canvas.width = 128;
-  canvas.height = 160;
+  canvas.width = 512;
+  canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  const cx = canvas.width / 2;
-  const baseY = canvas.height - 4;
-  const w = canvas.width * 0.9;
-  const h = canvas.height * 0.92;
 
-  if (type === 'conifer') drawConiferSilhouette(ctx, cx, baseY, w, h, color);
-  else if (type === 'deciduous') drawDeciduousSilhouette(ctx, cx, baseY, w, h, color);
-  else if (type === 'bush') drawBushSilhouette(ctx, cx, baseY, w * 0.9, h * 0.55, color);
-  else if (type === 'grass') drawGrassSilhouette(ctx, cx, baseY, w * 0.7, h * 0.35, color);
+  // Dégradé de fond : sombre en haut (sous-bois profond), plus clair-brumeux
+  // au centre, sombre à nouveau vers le sol.
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, '#1c2a22');
+  gradient.addColorStop(0.45, '#3a5248');
+  gradient.addColorStop(0.7, '#4a6358');
+  gradient.addColorStop(1, '#2e4438');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const texture = new THREE.CanvasTexture(canvas);
+  // Silhouettes ovales indistinctes (troncs/feuillage flous), jamais nettes,
+  // pour suggérer une masse de forêt sans dessiner de forme reconnaissable.
+  for (let i = 0; i < 40; i++) {
+    const x = Math.random() * canvas.width;
+    const y = canvas.height * 0.25 + Math.random() * canvas.height * 0.6;
+    const w = 15 + Math.random() * 35;
+    const h = 40 + Math.random() * 100;
+    const darkness = Math.random() * 0.3;
+    ctx.fillStyle = `rgba(15, 25, 18, ${0.15 + darkness})`;
+    ctx.beginPath();
+    ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Flou appliqué directement sur le canvas (si le navigateur le supporte),
+  // pour garantir que rien n'a de contour net, cohérent avec l'effet "hors
+  // focus" recherché plutôt que de compter uniquement sur le flou de
+  // profondeur 3D (BokehPass), qui pourrait être désactivé ou ajusté plus tard.
+  if (ctx.filter !== undefined) {
+    const blurredCanvas = document.createElement('canvas');
+    blurredCanvas.width = canvas.width;
+    blurredCanvas.height = canvas.height;
+    const blurredCtx = blurredCanvas.getContext('2d');
+    blurredCtx.filter = 'blur(12px)';
+    blurredCtx.drawImage(canvas, 0, 0);
+    var finalCanvas = blurredCanvas;
+  } else {
+    var finalCanvas = canvas;
+  }
+
+  const texture = new THREE.CanvasTexture(finalCanvas);
   texture.magFilter = THREE.LinearFilter;
   texture.minFilter = THREE.LinearFilter;
-  return texture;
+
+  const material = new THREE.MeshBasicMaterial({ map: texture, fog: true });
+  const geometry = new THREE.PlaneGeometry(70, 24);
+  const backdrop = new THREE.Mesh(geometry, material);
+  backdrop.position.set(0, 10, -18); // distance ~24.5 de la caméra, sous la limite de 28 où le fog de scène devient total
+  scene.add(backdrop);
 }
 
-/**
- * Construit tout le décor de forêt : silhouettes 2D en sprites, réparties sur
- * 3 bandes de profondeur pour un effet de parallax HD2D. Les éléments lointains
- * sont plus petits, plus pâles (désaturation atmosphérique) et plus nombreux ;
- * les éléments proches sont plus grands, plus saturés, et projettent une ombre.
- */
 function createForestDecor(scene) {
-  // Bandes de profondeur : [zMin, zMax, scaleMin, scaleMax, colorMix (0=normal couleur, 1=pâle/bleuté), count]
   const BANDS = [
-    { zMin: -26, zMax: -18, scaleMin: 1.6, scaleMax: 2.4, fade: 0.55, count: 16, xRange: 16 },
-    { zMin: -16, zMax: -9,  scaleMin: 2.4, scaleMax: 3.4, fade: 0.28, count: 12, xRange: 13 },
-    { zMin: 2,   zMax: 4,   scaleMin: 2.6, scaleMax: 3.6, fade: 0,    count: 8,  xRange: 4.2, excludeCenter: true },
+    { zMin: -26, zMax: -18, scaleMin: 1.6, scaleMax: 2.4, fade: 0.55, count: 14, xRange: 16, categories: ['deciduous'] },
+    { zMin: -16, zMax: -9,  scaleMin: 2.4, scaleMax: 3.4, fade: 0.28, count: 12, xRange: 13, categories: ['deciduous', 'bush'] },
+    { zMin: 2,   zMax: 4,   scaleMin: 2.6, scaleMax: 3.6, fade: 0,    count: 8,  xRange: 4.2, excludeCenter: true, categories: ['deciduous', 'bush', 'grass'] },
   ];
 
-  // Couleurs de base par type d'élément (verts forêt variés pour éviter la monotonie)
-  const ELEMENT_TYPES = [
-    { type: 'conifer',   baseColor: [35, 70, 40],  weight: 3 },
-    { type: 'conifer',   baseColor: [45, 80, 48],  weight: 2 },
-    { type: 'deciduous', baseColor: [60, 95, 50],  weight: 3 },
-    { type: 'deciduous', baseColor: [70, 100, 55], weight: 2 },
-    { type: 'bush',      baseColor: [55, 90, 45],  weight: 2 },
-  ];
-  const totalWeight = ELEMENT_TYPES.reduce((s, e) => s + e.weight, 0);
-
-  function pickElementType() {
-    let roll = Math.random() * totalWeight;
-    for (const e of ELEMENT_TYPES) {
-      roll -= e.weight;
-      if (roll <= 0) return e;
-    }
-    return ELEMENT_TYPES[0];
-  }
-
-  // Mélange la couleur de base avec un bleu-gris pâle selon le facteur "fade"
-  // (0 = couleur normale, 1 = quasi entièrement pâle) pour simuler la brume
-  // atmosphérique qui désature les objets lointains.
-  function fadeColor([r, g, b], fade) {
-    const fr = 165, fg = 178, fb = 188; // teinte brume bleu-gris pâle
-    const mr = Math.round(r + (fr - r) * fade);
-    const mg = Math.round(g + (fg - g) * fade);
-    const mb = Math.round(b + (fb - b) * fade);
-    return `rgb(${mr}, ${mg}, ${mb})`;
-  }
-
-  const textureCache = {};
-  function getTexture(type, colorKey, colorStr) {
-    const cacheKey = type + ':' + colorKey;
-    if (!textureCache[cacheKey]) {
-      textureCache[cacheKey] = buildForestElementTexture(type, colorStr);
-    }
-    return textureCache[cacheKey];
+  // Mélange la couleur blanche (= pas de teinte) avec un bleu-gris pâle selon
+  // le facteur "fade" (0 = couleur d'origine intacte, 1 = quasi entièrement
+  // pâle), pour simuler la brume atmosphérique sans modifier la texture source.
+  function fadeTintColor(fade) {
+    const r = Math.round(255 - (255 - 165) * fade);
+    const g = Math.round(255 - (255 - 178) * fade);
+    const b = Math.round(255 - (255 - 188) * fade);
+    return new THREE.Color(`rgb(${r}, ${g}, ${b})`);
   }
 
   for (const band of BANDS) {
     for (let i = 0; i < band.count; i++) {
-      const elementDef = pickElementType();
-      const colorStr = fadeColor(elementDef.baseColor, band.fade);
-      const colorKey = Math.round(band.fade * 10); // arrondi pour limiter le nb de textures en cache
-      const texture = getTexture(elementDef.type, colorKey, colorStr);
+      const category = band.categories[Math.floor(Math.random() * band.categories.length)];
+      const files = FOREST_DECOR_FILES[category];
+      const url = files[Math.floor(Math.random() * files.length)];
 
-      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-      const sprite = new THREE.Sprite(material);
+      loadForestTexture(url, ({ texture, aspectRatio }) => {
+        const material = new THREE.SpriteMaterial({
+          map: texture,
+          transparent: true,
+          color: fadeTintColor(band.fade),
+        });
+        const sprite = new THREE.Sprite(material);
 
-      const scale = band.scaleMin + Math.random() * (band.scaleMax - band.scaleMin);
-      // Les silhouettes sont dessinées dans un canvas 128x160 (ratio 0.8:1)
-      sprite.scale.set(scale * 0.8, scale, 1);
+        const scaleMul = band.scaleMin + Math.random() * (band.scaleMax - band.scaleMin);
+        const baseHeight = FOREST_ELEMENT_BASE_HEIGHT[category];
+        const height = baseHeight * scaleMul;
+        const width = height * aspectRatio;
+        sprite.scale.set(width, height, 1);
 
-      let x;
-      if (band.excludeCenter) {
-        // Bande proche : on évite la zone centrale (où se trouvent les combattants)
-        // en plaçant l'élément soit franchement à gauche, soit franchement à droite,
-        // façon cadrage "avant-scène" plutôt qu'une distribution uniforme qui
-        // risquerait de masquer le combat.
-        const side = Math.random() < 0.5 ? -1 : 1;
-        x = side * (band.xRange * 0.55 + Math.random() * band.xRange * 0.45);
-      } else {
-        x = (Math.random() - 0.5) * 2 * band.xRange;
-      }
-      const z = band.zMin + Math.random() * (band.zMax - band.zMin);
-      sprite.position.set(x, scale / 2, z);
-      scene.add(sprite);
+        let x;
+        if (band.excludeCenter) {
+          const side = Math.random() < 0.5 ? -1 : 1;
+          x = side * (band.xRange * 0.55 + Math.random() * band.xRange * 0.45);
+        } else {
+          x = (Math.random() - 0.5) * 2 * band.xRange;
+        }
+        const z = band.zMin + Math.random() * (band.zMax - band.zMin);
+        sprite.position.set(x, height / 2, z);
+        scene.add(sprite);
 
-      // Ombre portée uniquement pour la bande proche (les bandes lointaines sont
-      // trop loin pour qu'une ombre soit perceptible, et ça évite l'effort de calcul)
-      if (band.fade === 0) {
-        addGroundShadow(x, z, scale * 0.22);
-      }
+        if (band.fade === 0) {
+          addGroundShadow(x, z, height * 0.28);
+        }
+      });
     }
   }
 }
