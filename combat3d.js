@@ -114,7 +114,7 @@ function initCombat3D(containerId) {
 
   // --- Décor de forêt dense : vrais sprites PNG (arbres, buissons, herbe),
   // réparties sur 6 bandes de profondeur pour un effet de parallax HD2D riche. ---
-  createForestDecor(scene);
+  createForestDecor(scene, camera);
   createDeepForestBackdrop(scene);
 
   // --- Sprites billboard (placeholders au départ, remplacés via setXxxSprite) ---
@@ -415,91 +415,153 @@ function createDeepForestBackdrop(scene) {
   scene.add(backdrop);
 }
 
-function createForestDecor(scene) {
-  // RÈGLE DE SÉCURITÉ : les deux sprites de combat sont entre z=-1.5 et z=1.5.
-  // Toute bande de décor dont la profondeur chevauche la zone z=[-3, 5] DOIT
-  // exclure une zone centrale large (x entre -3.5 et 3.5) pour ne jamais risquer
-  // de masquer un personnage. Les bandes vraiment lointaines (z < -3) n'ont pas
-  // cette restriction : à cette distance les sprites de combat ne sont plus dans
-  // l'alignement possible de ces arbres (ils sont plus proches de la caméra).
-  const BANDS = [
-    // Lointaines : juste avant que le brouillard de scène (total à z=-18.5)
-    // ne les efface, déjà très désaturées pour une transition douce
-    { zMin: -18, zMax: -15, scaleMin: 1.4, scaleMax: 1.9, fade: 0.7,  count: 14, xRange: 17, categories: ['deciduous'] },
-    { zMin: -15, zMax: -12, scaleMin: 1.8, scaleMax: 2.4, fade: 0.55, count: 14, xRange: 16, categories: ['deciduous', 'bush'] },
-    // Moyennes
-    { zMin: -12, zMax: -9,  scaleMin: 2.2, scaleMax: 2.9, fade: 0.4,  count: 13, xRange: 14, categories: ['deciduous', 'bush'] },
-    { zMin: -9,  zMax: -6,  scaleMin: 2.6, scaleMax: 3.3, fade: 0.25, count: 12, xRange: 10, excludeCenter: true, centerSafe: 4, categories: ['deciduous', 'bush'] },
-    // Proches : effet d'arc de cercle pour cadrer visuellement la zone de combat
-    // (les arbres se rapprochent du bord de l'écran plutôt que d'être distribués
-    // aléatoirement, créant une sorte de "vignette" naturelle façon avant-scène).
-    { zMin: -6,  zMax: -2,  scaleMin: 2.6, scaleMax: 3.2, fade: 0.12, count: 10, xRange: 9, excludeCenter: true, centerSafe: 3, arcEffect: true, categories: ['deciduous', 'bush', 'grass'] },
+/**
+ * Vérifie si un point (x, z) projeté à l'écran, vu depuis la caméra de combat,
+ * risque de chevaucher visuellement la position d'un des deux combattants.
+ * On compare les angles horizontaux (depuis la caméra) plutôt que juste les
+ * positions X brutes, pour tenir compte correctement de la perspective.
+ */
+function angleFromCamera(x, z, camX, camZ) {
+  return Math.atan2(x - camX, camZ - z); // angle horizontal par rapport à l'axe de vue
+}
+
+function createForestDecor(scene, camera) {
+  // ===========================================
+  // CLAIRIÈRE CIRCULAIRE : vue du dessus, le centre (où se trouvent les deux
+  // combattants) reste une zone totalement vide. Les arbres sont disposés en
+  // anneaux concentriques tout autour, formant un cercle qui délimite
+  // visuellement la zone de combat — pas des bandes rectangulaires parallèles.
+  // ===========================================
+  const CLEARING_CENTER = { x: 0, z: 0 };
+  const CLEARING_RADIUS = 4.2; // rayon strictement interdit à tout arbre/buisson (couvre les 2 combattants avec marge)
+
+  // Référence dynamique à la vraie position de la caméra, plutôt qu'une valeur
+  // codée en dur qui se désynchroniserait silencieusement si jamais la position
+  // de la caméra est ajustée ailleurs dans initCombat3D.
+  const CAMERA_REF = { x: camera.position.x, z: camera.position.z };
+  // Demi-angle de sécurité (en radians) autour de l'axe de vue direct vers
+  // chaque combattant : aucun arbre ne doit avoir un angle proche de celui des
+  // combattants, peu importe sa distance, pour ne jamais passer "devant" eux
+  // à l'écran à cause de la perspective.
+  const SAFE_ANGLE_MARGIN = 0.16; // ~9°, marge confortable autour de chaque combattant
+
+  const enemyAngle = angleFromCamera(ENEMY_POSITION.x, ENEMY_POSITION.z, CAMERA_REF.x, CAMERA_REF.z);
+  const playerAngle = angleFromCamera(PLAYER_POSITION.x, PLAYER_POSITION.z, CAMERA_REF.x, CAMERA_REF.z);
+
+  function angleIsSafe(angle) {
+    const dEnemy = Math.abs(Math.atan2(Math.sin(angle - enemyAngle), Math.cos(angle - enemyAngle)));
+    const dPlayer = Math.abs(Math.atan2(Math.sin(angle - playerAngle), Math.cos(angle - playerAngle)));
+    return dEnemy > SAFE_ANGLE_MARGIN && dPlayer > SAFE_ANGLE_MARGIN;
+  }
+
+  /** Tire un angle aléatoire (0 à 2π) qui ne chevauche pas un des combattants. */
+  function pickSafeAngle() {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const angle = Math.random() * Math.PI * 2;
+      if (angleIsSafe(angle)) return angle;
+    }
+    return Math.PI; // secours improbable : vers l'arrière, toujours sûr
+  }
+
+  // Anneaux concentriques d'arbres : rayon croissant = profondeur visuelle
+  // croissante, avec la même logique de désaturation/échelle qu'avant.
+  const TREE_RINGS = [
+    { radius: 4.6,  scaleMin: 2.6, scaleMax: 3.2, fade: 0,    count: 10 },
+    { radius: 6.5,  scaleMin: 2.3, scaleMax: 2.9, fade: 0.12, count: 12 },
+    { radius: 9,    scaleMin: 2.0, scaleMax: 2.6, fade: 0.25, count: 14 },
+    { radius: 12,   scaleMin: 1.7, scaleMax: 2.2, fade: 0.4,  count: 14 },
+    { radius: 15,   scaleMin: 1.4, scaleMax: 1.8, fade: 0.55, count: 14 },
+    { radius: 17.5, scaleMin: 1.1, scaleMax: 1.5, fade: 0.7,  count: 12 },
   ];
 
-  // Teinte appliquée au décor : un assombrissement de base systématique (même
-  // pour les éléments proches) pour cohérence avec l'ambiance nocturne/crépuscule,
-  // puis un fade supplémentaire vers le bleu sombre du brouillard pour les
-  // éléments lointains (au lieu d'un fade vers le blanc, qui n'avait de sens
-  // qu'avec un ciel de jour clair).
+  // Vérification active de la contrainte de clairière : si jamais un anneau est
+  // défini avec un rayon trop proche du centre, on le signale explicitement
+  // plutôt que de laisser un arbre apparaître silencieusement dans la zone de
+  // combat (la contrainte ne doit jamais dépendre uniquement du bon choix
+  // manuel des valeurs ci-dessus).
+  for (const ring of TREE_RINGS) {
+    if (ring.radius < CLEARING_RADIUS) {
+      console.error(`Combat3D: anneau d'arbres à radius=${ring.radius} est À L'INTÉRIEUR de la clairière (radius minimum=${CLEARING_RADIUS}) — risque de masquer les combattants !`);
+    }
+  }
+
+  // Teinte appliquée au décor : assombrissement de base systématique, puis fade
+  // supplémentaire vers le bleu sombre du brouillard pour les anneaux lointains.
   function fadeTintColor(fade) {
-    const baseDarken = 0.6; // 60% de la luminosité d'origine, même au premier plan
-    const fr = 20, fg = 29, fb = 46; // teinte du brouillard nocturne (cohérent avec scene.fog)
+    const baseDarken = 0.6;
+    const fr = 20, fg = 29, fb = 46;
     const r = Math.round(255 * baseDarken * (1 - fade) + fr * fade);
     const g = Math.round(255 * baseDarken * (1 - fade) + fg * fade);
     const b = Math.round(255 * baseDarken * (1 - fade) + fb * fade);
     return new THREE.Color(`rgb(${r}, ${g}, ${b})`);
   }
 
-  for (const band of BANDS) {
-    for (let i = 0; i < band.count; i++) {
-      const category = band.categories[Math.floor(Math.random() * band.categories.length)];
-      const files = FOREST_DECOR_FILES[category];
-      const url = files[Math.floor(Math.random() * files.length)];
+  /** Place un élément de décor (arbre/buisson/herbe) à une position polaire donnée. */
+  function placeElement(category, radius, angle, fade, scaleMul) {
+    const files = FOREST_DECOR_FILES[category];
+    const url = files[Math.floor(Math.random() * files.length)];
 
-      loadForestTexture(url, ({ texture, aspectRatio }) => {
-        const material = new THREE.SpriteMaterial({
-          map: texture,
-          transparent: true,
-          color: fadeTintColor(band.fade),
-        });
-        const sprite = new THREE.Sprite(material);
-
-        const scaleMul = band.scaleMin + Math.random() * (band.scaleMax - band.scaleMin);
-        const baseHeight = FOREST_ELEMENT_BASE_HEIGHT[category];
-        const height = baseHeight * scaleMul;
-        const width = height * aspectRatio;
-        sprite.scale.set(width, height, 1);
-
-        let x, z;
-        if (band.excludeCenter) {
-          // La zone centrale [-centerSafe, +centerSafe] est totalement interdite
-          // (c'est là que se trouvent les sprites de combat) ; l'élément est
-          // placé entre centerSafe et centerSafe+xRange, de chaque côté.
-          const side = Math.random() < 0.5 ? -1 : 1;
-          const distFromCenter = Math.random(); // 0 = juste après centerSafe, 1 = au bord extérieur
-          x = side * (band.centerSafe + distFromCenter * band.xRange);
-
-          if (band.arcEffect) {
-            // Effet d'arc de cercle : plus l'élément est excentré (distFromCenter
-            // proche de 1), plus il est rapproché de la caméra (z proche de zMax),
-            // pour suggérer une courbe qui encadre la zone de combat plutôt qu'une
-            // simple bande rectangulaire plate.
-            z = band.zMin + distFromCenter * (band.zMax - band.zMin);
-          } else {
-            z = band.zMin + Math.random() * (band.zMax - band.zMin);
-          }
-        } else {
-          x = (Math.random() - 0.5) * 2 * band.xRange;
-          z = band.zMin + Math.random() * (band.zMax - band.zMin);
-        }
-        sprite.position.set(x, height / 2, z);
-        scene.add(sprite);
-
-        if (band.fade === 0) {
-          addGroundShadow(x, z, height * 0.28);
-        }
+    loadForestTexture(url, ({ texture, aspectRatio }) => {
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        color: fadeTintColor(fade),
       });
+      const sprite = new THREE.Sprite(material);
+
+      const baseHeight = FOREST_ELEMENT_BASE_HEIGHT[category];
+      const height = baseHeight * scaleMul;
+      const width = height * aspectRatio;
+      sprite.scale.set(width, height, 1);
+
+      const x = CLEARING_CENTER.x + Math.sin(angle) * radius;
+      const z = CLEARING_CENTER.z + Math.cos(angle) * radius;
+      sprite.position.set(x, height / 2, z);
+      scene.add(sprite);
+
+      if (fade === 0) {
+        addGroundShadow(x, z, height * 0.28);
+      }
+    });
+  }
+
+  // --- Anneaux d'arbres, en cercle complet autour de la clairière ---
+  for (const ring of TREE_RINGS) {
+    const angleStep = (Math.PI * 2) / ring.count;
+    for (let i = 0; i < ring.count; i++) {
+      // Léger décalage aléatoire autour de la position régulière en anneau,
+      // pour éviter un alignement parfait trop artificiel, tout en gardant
+      // globalement la répartition en cercle.
+      let angle = i * angleStep + (Math.random() - 0.5) * angleStep * 0.6;
+      if (!angleIsSafe(angle)) angle = pickSafeAngle();
+
+      const radiusJitter = ring.radius + (Math.random() - 0.5) * (ring.radius * 0.12);
+      const scaleMul = ring.scaleMin + Math.random() * (ring.scaleMax - ring.scaleMin);
+      placeElement('deciduous', radiusJitter, angle, ring.fade, scaleMul);
+
+      // --- Buissons pour combler les trous entre les troncs d'arbres ---
+      // Un buisson est placé juste à côté de chaque arbre (même angle, rayon
+      // légèrement différent), pour habiller la base des troncs et combler
+      // visuellement les espaces vides entre deux arbres consécutifs.
+      if (Math.random() < 0.7) {
+        const bushAngle = angle + (Math.random() - 0.5) * angleStep * 0.5;
+        const bushRadius = radiusJitter + (Math.random() - 0.5) * 1.2;
+        const bushScale = 1.2 + Math.random() * 1.4;
+        placeElement('bush', bushRadius, bushAngle, ring.fade, bushScale);
+      }
     }
+  }
+
+  // --- Herbe basse : dispersée librement, y compris à l'INTÉRIEUR de la
+  // clairière (elle est trop basse pour jamais masquer un personnage). ---
+  const GRASS_COUNT = 24;
+  for (let i = 0; i < GRASS_COUNT; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    // Rayon de 1.2 (proche du centre, mais pas collé aux pieds des sprites) à
+    // 8 (peut aller jusque dans la zone des premiers arbres).
+    const radius = 1.2 + Math.random() * 6.8;
+    const scaleMul = 0.5 + Math.random() * 0.6; // petite échelle, comme demandé
+    placeElement('grass', radius, angle, 0, scaleMul);
   }
 }
 
