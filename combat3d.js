@@ -155,7 +155,7 @@ function initCombat3D(containerId) {
   // répondre à ce besoin précis.)
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bokehPass = new BokehPass(scene, camera, { focus: 4.7, aperture: 0.0022, maxblur: 0.013 });
+  bokehPass = new BokehPass(scene, camera, { focus: 4.7, aperture: 0.0035, maxblur: 0.028 });
   composer.addPass(bokehPass);
   composer.addPass(new OutputPass());
 
@@ -309,11 +309,21 @@ const forestTextureCache = {}; // évite de recharger la même image plusieurs f
  * par cohérence avec setEnemySpriteFrame, et pour éviter tout risque de
  * problème CORS si jamais le jeu est un jour rouvert en file:// localement.
  */
+const forestTexturePending = {}; // URLs actuellement en cours de chargement, avec la liste des callbacks en attente
+
 function loadForestTexture(url, callback) {
   if (forestTextureCache[url]) {
     callback(forestTextureCache[url]);
     return;
   }
+  if (forestTexturePending[url]) {
+    // Un chargement de cette URL est déjà en cours : on ajoute ce callback à la
+    // file d'attente plutôt que de relancer un second chargement redondant.
+    forestTexturePending[url].push(callback);
+    return;
+  }
+  forestTexturePending[url] = [callback];
+
   const imgEl = new Image();
   imgEl.onload = () => {
     const texture = new THREE.Texture(imgEl);
@@ -322,10 +332,13 @@ function loadForestTexture(url, callback) {
     texture.needsUpdate = true;
     const entry = { texture, aspectRatio: imgEl.naturalWidth / imgEl.naturalHeight };
     forestTextureCache[url] = entry;
-    callback(entry);
+    const waitingCallbacks = forestTexturePending[url];
+    delete forestTexturePending[url];
+    for (const cb of waitingCallbacks) cb(entry);
   };
   imgEl.onerror = (err) => {
     console.error('Combat3D: échec de chargement du décor :', url, err);
+    delete forestTexturePending[url]; // libère la file d'attente même en cas d'échec, pour ne pas bloquer définitivement cette URL
   };
   imgEl.src = url;
 }
@@ -417,9 +430,10 @@ function createForestDecor(scene) {
     // Moyennes
     { zMin: -12, zMax: -9,  scaleMin: 2.2, scaleMax: 2.9, fade: 0.4,  count: 13, xRange: 14, categories: ['deciduous', 'bush'] },
     { zMin: -9,  zMax: -6,  scaleMin: 2.6, scaleMax: 3.3, fade: 0.25, count: 12, xRange: 10, excludeCenter: true, centerSafe: 4, categories: ['deciduous', 'bush'] },
-    { zMin: -6,  zMax: -2,  scaleMin: 3.0, scaleMax: 3.7, fade: 0.12, count: 10, xRange: 9, excludeCenter: true, centerSafe: 3, categories: ['deciduous', 'bush', 'grass'] },
-    // Proches : DANS la zone des combattants, exclusion du centre obligatoire
-    { zMin: -2,  zMax: 1,   scaleMin: 3.2, scaleMax: 4.2, fade: 0,    count: 9,  xRange: 2.4, excludeCenter: true, centerSafe: 2.8, categories: ['deciduous', 'bush', 'grass'] },
+    // Proches : effet d'arc de cercle pour cadrer visuellement la zone de combat
+    // (les arbres se rapprochent du bord de l'écran plutôt que d'être distribués
+    // aléatoirement, créant une sorte de "vignette" naturelle façon avant-scène).
+    { zMin: -6,  zMax: -2,  scaleMin: 2.6, scaleMax: 3.2, fade: 0.12, count: 10, xRange: 9, excludeCenter: true, centerSafe: 3, arcEffect: true, categories: ['deciduous', 'bush', 'grass'] },
   ];
 
   // Teinte appliquée au décor : un assombrissement de base systématique (même
@@ -456,17 +470,28 @@ function createForestDecor(scene) {
         const width = height * aspectRatio;
         sprite.scale.set(width, height, 1);
 
-        let x;
+        let x, z;
         if (band.excludeCenter) {
           // La zone centrale [-centerSafe, +centerSafe] est totalement interdite
           // (c'est là que se trouvent les sprites de combat) ; l'élément est
           // placé entre centerSafe et centerSafe+xRange, de chaque côté.
           const side = Math.random() < 0.5 ? -1 : 1;
-          x = side * (band.centerSafe + Math.random() * band.xRange);
+          const distFromCenter = Math.random(); // 0 = juste après centerSafe, 1 = au bord extérieur
+          x = side * (band.centerSafe + distFromCenter * band.xRange);
+
+          if (band.arcEffect) {
+            // Effet d'arc de cercle : plus l'élément est excentré (distFromCenter
+            // proche de 1), plus il est rapproché de la caméra (z proche de zMax),
+            // pour suggérer une courbe qui encadre la zone de combat plutôt qu'une
+            // simple bande rectangulaire plate.
+            z = band.zMin + distFromCenter * (band.zMax - band.zMin);
+          } else {
+            z = band.zMin + Math.random() * (band.zMax - band.zMin);
+          }
         } else {
           x = (Math.random() - 0.5) * 2 * band.xRange;
+          z = band.zMin + Math.random() * (band.zMax - band.zMin);
         }
-        const z = band.zMin + Math.random() * (band.zMax - band.zMin);
         sprite.position.set(x, height / 2, z);
         scene.add(sprite);
 
