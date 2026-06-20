@@ -37,12 +37,24 @@ const BLOOM_SCENE = 1;
 const bloomLayer = new THREE.Layers();
 bloomLayer.set(BLOOM_SCENE);
 const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const darkSpriteMaterial = new THREE.SpriteMaterial({ color: 0x000000 });
 const materialsBackup = {};
 
 function darkenNonBloomed(obj) {
-  if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
-    materialsBackup[obj.uuid] = obj.material;
-    obj.material = darkMaterial;
+  // IMPORTANT : THREE.Sprite n'a PAS isMesh=true (vérifié empiriquement), donc
+  // sans inclure isSprite ici, les sprites des personnages restaient avec leurs
+  // vraies couleurs pendant le calcul du bloom et déclenchaient eux-mêmes l'effet
+  // de halo — c'est ce qui causait tout le délavage observé. On utilise un
+  // SpriteMaterial dédié pour les Sprite (type natif garanti compatible),
+  // différent du MeshBasicMaterial utilisé pour les vrais Mesh.
+  if (bloomLayer.test(obj.layers) === false) {
+    if (obj.isMesh) {
+      materialsBackup[obj.uuid] = obj.material;
+      obj.material = darkMaterial;
+    } else if (obj.isSprite) {
+      materialsBackup[obj.uuid] = obj.material;
+      obj.material = darkSpriteMaterial;
+    }
   }
 }
 
