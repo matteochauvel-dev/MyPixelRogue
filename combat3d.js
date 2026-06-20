@@ -112,8 +112,8 @@ function initCombat3D(containerId) {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // --- Décor de forêt dense : silhouettes 2D en sprites, réparties sur 3 bandes
-  // de profondeur (lointain/moyen/proche) pour un effet de parallax HD2D. ---
+  // --- Décor de forêt dense : vrais sprites PNG (arbres, buissons, herbe),
+  // réparties sur 6 bandes de profondeur pour un effet de parallax HD2D riche. ---
   createForestDecor(scene);
   createDeepForestBackdrop(scene);
 
@@ -155,7 +155,7 @@ function initCombat3D(containerId) {
   // répondre à ce besoin précis.)
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bokehPass = new BokehPass(scene, camera, { focus: 4.7, aperture: 0.045, maxblur: 0.018 });
+  bokehPass = new BokehPass(scene, camera, { focus: 4.7, aperture: 0.0022, maxblur: 0.013 });
   composer.addPass(bokehPass);
   composer.addPass(new OutputPass());
 
@@ -403,10 +403,23 @@ function createDeepForestBackdrop(scene) {
 }
 
 function createForestDecor(scene) {
+  // RÈGLE DE SÉCURITÉ : les deux sprites de combat sont entre z=-1.5 et z=1.5.
+  // Toute bande de décor dont la profondeur chevauche la zone z=[-3, 5] DOIT
+  // exclure une zone centrale large (x entre -3.5 et 3.5) pour ne jamais risquer
+  // de masquer un personnage. Les bandes vraiment lointaines (z < -3) n'ont pas
+  // cette restriction : à cette distance les sprites de combat ne sont plus dans
+  // l'alignement possible de ces arbres (ils sont plus proches de la caméra).
   const BANDS = [
-    { zMin: -26, zMax: -18, scaleMin: 1.6, scaleMax: 2.4, fade: 0.55, count: 14, xRange: 16, categories: ['deciduous'] },
-    { zMin: -16, zMax: -9,  scaleMin: 2.4, scaleMax: 3.4, fade: 0.28, count: 12, xRange: 13, categories: ['deciduous', 'bush'] },
-    { zMin: 2,   zMax: 4,   scaleMin: 2.6, scaleMax: 3.6, fade: 0,    count: 8,  xRange: 4.2, excludeCenter: true, categories: ['deciduous', 'bush', 'grass'] },
+    // Lointaines : juste avant que le brouillard de scène (total à z=-18.5)
+    // ne les efface, déjà très désaturées pour une transition douce
+    { zMin: -18, zMax: -15, scaleMin: 1.4, scaleMax: 1.9, fade: 0.7,  count: 14, xRange: 17, categories: ['deciduous'] },
+    { zMin: -15, zMax: -12, scaleMin: 1.8, scaleMax: 2.4, fade: 0.55, count: 14, xRange: 16, categories: ['deciduous', 'bush'] },
+    // Moyennes
+    { zMin: -12, zMax: -9,  scaleMin: 2.2, scaleMax: 2.9, fade: 0.4,  count: 13, xRange: 14, categories: ['deciduous', 'bush'] },
+    { zMin: -9,  zMax: -6,  scaleMin: 2.6, scaleMax: 3.3, fade: 0.25, count: 12, xRange: 10, excludeCenter: true, centerSafe: 4, categories: ['deciduous', 'bush'] },
+    { zMin: -6,  zMax: -2,  scaleMin: 3.0, scaleMax: 3.7, fade: 0.12, count: 10, xRange: 9, excludeCenter: true, centerSafe: 3, categories: ['deciduous', 'bush', 'grass'] },
+    // Proches : DANS la zone des combattants, exclusion du centre obligatoire
+    { zMin: -2,  zMax: 1,   scaleMin: 3.2, scaleMax: 4.2, fade: 0,    count: 9,  xRange: 2.4, excludeCenter: true, centerSafe: 2.8, categories: ['deciduous', 'bush', 'grass'] },
   ];
 
   // Teinte appliquée au décor : un assombrissement de base systématique (même
@@ -445,8 +458,11 @@ function createForestDecor(scene) {
 
         let x;
         if (band.excludeCenter) {
+          // La zone centrale [-centerSafe, +centerSafe] est totalement interdite
+          // (c'est là que se trouvent les sprites de combat) ; l'élément est
+          // placé entre centerSafe et centerSafe+xRange, de chaque côté.
           const side = Math.random() < 0.5 ? -1 : 1;
-          x = side * (band.xRange * 0.55 + Math.random() * band.xRange * 0.45);
+          x = side * (band.centerSafe + Math.random() * band.xRange);
         } else {
           x = (Math.random() - 0.5) * 2 * band.xRange;
         }
