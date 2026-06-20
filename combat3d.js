@@ -150,7 +150,16 @@ function initCombat3D(containerId) {
 
   // --- Particules ambiantes ---
   particleGeometry = new THREE.BufferGeometry();
-  const particlePositions = new Float32Array(PARTICLE_COUNT * 3);
+  // IMPORTANT : Float32BufferAttribute fait une COPIE interne du tableau qu'on lui
+  // passe (vérifié empiriquement) — donc on ne doit JAMAIS garder de référence séparée
+  // au tableau d'origine pour le modifier plus tard. À la place, on crée l'attribut
+  // d'abord avec des zéros, puis on travaille uniquement sur sa référence interne
+  // (particleGeometry.attributes.position.array), qui est la seule source de vérité
+  // lue par le rendu. Sans cette précaution, resetParticle() modifierait un tableau
+  // fantôme jamais affiché, et les particules sembleraient "monter à l'infini" sans
+  // jamais être recyclées (exactement le bug observé).
+  particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(PARTICLE_COUNT * 3), 3));
+  const particlePositions = particleGeometry.attributes.position.array;
   particleSpeeds = new Float32Array(PARTICLE_COUNT);
   particleDrift = new Float32Array(PARTICLE_COUNT);
 
@@ -164,7 +173,7 @@ function initCombat3D(containerId) {
     particleDrift[i] = Math.random() * Math.PI * 2;
   }
   for (let i = 0; i < PARTICLE_COUNT; i++) resetParticle(i, true);
-  particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(particlePositions, 3));
+  particleGeometry.attributes.position.needsUpdate = true; // après la première initialisation manuelle
   particleGeometry.userData.resetParticle = resetParticle; // exposé pour la boucle d'animation
 
   const particleMaterial = new THREE.PointsMaterial({
@@ -315,6 +324,15 @@ function setEnemySpriteFrame(imageUrl) {
     const aspectRatio = imgEl.naturalWidth / imgEl.naturalHeight;
     const height = ENEMY_SPRITE_HEIGHT;
     const width = ENEMY_SPRITE_HEIGHT * aspectRatio;
+
+    console.log('Combat3D DIAGNOSTIC ratio sprite ennemi:', {
+      imageUrl,
+      naturalWidth: imgEl.naturalWidth,
+      naturalHeight: imgEl.naturalHeight,
+      aspectRatioCalcule: aspectRatio,
+      scaleAppliqueX: width,
+      scaleAppliqueY: height,
+    });
 
     enemyTextureCache[imageUrl] = { texture, width, height };
     enemySprite.material.map = texture;
