@@ -109,9 +109,18 @@ const playerMat = new THREE.MeshBasicMaterial({
 const playerPlaceholder = new THREE.Mesh(playerGeo, playerMat);
 
 // Position : avant-plan, légèrement à gauche du centre (comme le héros
-// principal dans l'image de référence), proche de la caméra.
+// principal dans l'image de référence).
 // y = 0.5 pour que la base du carré (1x1) touche le sol.
-playerPlaceholder.position.set(-0.8, 0.5, 4);
+//
+// IMPORTANT (bug corrigé) : la position initiale (z=4) ne plaçait que le
+// haut du carré dans le cadre caméra (vérifié par calcul de projection :
+// project() donnait NDC y=-1.72 pour les coins du bas, hors de la plage
+// valide [-1, 1]). z=2.5 restait encore légèrement hors cadre sur un coin
+// (-1.026). z=2.0 a été vérifié avec la VRAIE matrice de transformation
+// (position + rotation lookAt combinées, pas juste la position du centre)
+// et place les 4 sommets dans le cadre avec une marge confortable
+// (NDC y entre -0.871 et -0.364).
+playerPlaceholder.position.set(-0.8, 0.5, 2.0);
 
 // Le Plane fait face à la caméra : on le fait pivoter pour qu'il soit
 // vertical et tourné vers la caméra, en copiant l'orientation de la caméra
