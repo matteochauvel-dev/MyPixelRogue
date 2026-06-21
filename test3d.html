@@ -209,11 +209,30 @@ scene.add(dirLight);
 // seul plaquage étiré sur tout le plan, sans RepeatWrapping — le fog
 // estompe de toute façon les bords lointains, donc l'absence de
 // répétition ne se voit pas une fois en jeu.
+//
+// CORRECTION (bug détecté sur capture d'écran : sol flou près du centre
+// de l'arène). Cause réelle, vérifiée par calcul de coordonnées UV : avec
+// un plan de 40x40 centré à l'origine, la caméra (en z=6.5, regardant vers
+// z=-2) ne voit qu'une bande étroite de la texture en profondeur — la
+// moitié du plan (z=0 à z=+20, "derrière" la zone visible) n'est JAMAIS vue,
+// et la portion réellement visible (z≈2.5 à z≈-14, calculée par projection)
+// représente une toute petite fraction de la hauteur de l'image source,
+// agrandie énormément pour remplir l'écran -> flou par sur-agrandissement
+// (PAS un problème de mipmaps, déjà vérifié et écarté par capture d'écran).
+//
+// Solution : plan repositionné et redimensionné pour correspondre à la
+// zone réellement utile. RECALCUL après un premier essai (50x20) qui
+// laissait un vide visible au loin (vérifié par projection : le sol
+// s'arrêtait à NDC y=0.189, soit vers le milieu de l'écran, donc le fond
+// devenait visible avant l'horizon). Nouvelle taille : largeur 68 (frustum
+// à distance 28.5 = 52, +marge), profondeur 25 (de z=2.5 proche caméra à
+// z=-22.5, point où le fog à far=28 a déjà presque tout estompé).
 const textureLoader = new THREE.TextureLoader();
-const groundGeo = new THREE.PlaneGeometry(40, 40);
+const groundGeo = new THREE.PlaneGeometry(68, 25);
 const groundTexture = textureLoader.load('sprites/decor/sol_herbe_01.png');
-// Pas de wrapS/wrapT en RepeatWrapping ici : ClampToEdgeWrapping (défaut)
-// convient puisqu'on étire une seule fois.
+groundTexture.magFilter = THREE.LinearFilter;
+groundTexture.minFilter = THREE.LinearFilter;
+groundTexture.generateMipmaps = false;
 const groundMat = new THREE.MeshStandardMaterial({
   map: groundTexture,
   roughness: 1,
@@ -221,6 +240,8 @@ const groundMat = new THREE.MeshStandardMaterial({
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = 0;
+// Centre du plan recalé sur le centre de la zone utile en Z : (2.5 + -22.5)/2 = -10
+ground.position.z = -10;
 scene.add(ground);
 
 // Grille de debug retirée : elle servait à calibrer les positions avant
