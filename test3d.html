@@ -230,9 +230,20 @@ scene.add(dirLight);
 const textureLoader = new THREE.TextureLoader();
 const groundGeo = new THREE.PlaneGeometry(68, 25);
 const groundTexture = textureLoader.load('sprites/decor/sol_herbe_01.png');
+// CORRECTION 2 (stries/déformation étrange en bas d'écran, signalées sur
+// capture) : la première correction (mipmaps désactivés) réglait le
+// sur-agrandissement au centre, mais créait un nouveau problème en vue très
+// rasante (quasi-horizontale) sur l'avant-plan proche caméra — sans
+// mipmaps, l'échantillonnage de texture à angle très oblique produit des
+// artefacts d'aliasing (stries), car le moteur ne peut plus moyenner
+// correctement les pixels source qui correspondent à un seul pixel écran
+// très étiré. C'est un problème d'ANISOTROPIE, pas de mipmaps en tant que
+// tel — la vraie correction est le filtrage anisotrope, conçu précisément
+// pour les surfaces vues à angle rasant (sol, route, etc.).
 groundTexture.magFilter = THREE.LinearFilter;
-groundTexture.minFilter = THREE.LinearFilter;
-groundTexture.generateMipmaps = false;
+groundTexture.minFilter = THREE.LinearMipmapLinearFilter; // mipmaps réactivés
+groundTexture.generateMipmaps = true;
+groundTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 const groundMat = new THREE.MeshStandardMaterial({
   map: groundTexture,
   roughness: 1,
