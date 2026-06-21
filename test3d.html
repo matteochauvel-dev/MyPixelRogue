@@ -200,11 +200,22 @@ dirLight.position.set(-3, 8, 2);
 scene.add(dirLight);
 
 // ===========================================
-// SOL
+// SOL — texture étirée une seule fois (pas de répétition)
 // ===========================================
+// La texture sprites/decor/sol_herbe_01.png a été nettoyée (ciel et logo
+// retirés) mais n'est PAS conçue pour se répéter sans coutures visibles
+// (plusieurs tentatives de la rendre "tileable" ont été testées et
+// donnaient toutes un motif de répétition trop visible). Décision : un
+// seul plaquage étiré sur tout le plan, sans RepeatWrapping — le fog
+// estompe de toute façon les bords lointains, donc l'absence de
+// répétition ne se voit pas une fois en jeu.
+const textureLoader = new THREE.TextureLoader();
 const groundGeo = new THREE.PlaneGeometry(40, 40);
+const groundTexture = textureLoader.load('sprites/decor/sol_herbe_01.png');
+// Pas de wrapS/wrapT en RepeatWrapping ici : ClampToEdgeWrapping (défaut)
+// convient puisqu'on étire une seule fois.
 const groundMat = new THREE.MeshStandardMaterial({
-  color: 0x2d6b2f,
+  map: groundTexture,
   roughness: 1,
 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -212,14 +223,14 @@ ground.rotation.x = -Math.PI / 2;
 ground.position.y = 0;
 scene.add(ground);
 
-const gridHelper = new THREE.GridHelper(40, 40, 0x88aa88, 0x4a7a4a);
-gridHelper.position.y = 0.01;
-scene.add(gridHelper);
+// Grille de debug retirée : elle servait à calibrer les positions avant
+// d'avoir une vraie texture de sol. Maintenant que sol_herbe_01.png est en
+// place, la grille masquait inutilement la texture.
 
 // ===========================================
 // SPRITE ENNEMI EN BILLBOARD (réglages validés à l'étape 2, inchangés)
 // ===========================================
-const textureLoader = new THREE.TextureLoader();
+// textureLoader déjà déclaré plus haut (section SOL) — réutilisé ici.
 const enemyTexture = textureLoader.load(
   'sprites/ennemis/01_goutteux/goutteux_idle_01.png'
 );
